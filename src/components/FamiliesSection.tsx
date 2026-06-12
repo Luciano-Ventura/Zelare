@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { LINKS, FAMILY_SERVICES } from "@/lib/constants";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Star } from "lucide-react";
 
 export default function FamiliesSection() {
   return (
@@ -45,27 +45,62 @@ export default function FamiliesSection() {
           <div className="flex-1 w-full relative hidden sm:block">
             <div className="aspect-square max-w-md mx-auto rounded-full bg-blue-light/20 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 blur-3xl -z-10" />
             <div className="bg-white p-8 rounded-3xl shadow-xl ring-1 ring-sand-light/50 flex flex-col gap-6">
-              <div className="flex gap-4 items-start">
-                <div className="w-12 h-12 rounded-full bg-sand-light shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-sand-light/50 rounded w-1/3" />
-                  <div className="h-4 bg-sand-light/30 rounded w-3/4" />
+              
+              {/* Card 1 */}
+              <div className="flex gap-4 items-center">
+                <div className="w-12 h-12 rounded-full bg-sand-light/50 flex items-center justify-center text-text-main font-semibold shrink-0 ring-1 ring-sand-light">
+                  MS
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="font-semibold text-text-main text-sm">Maria Silva</p>
+                    <div className="flex items-center gap-1 text-yellow-500">
+                      <Star className="h-3.5 w-3.5 fill-current" />
+                      <span className="text-xs font-medium text-text-secondary">5.0</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-text-secondary">Cuidadora de Idosos • São José</p>
                 </div>
               </div>
-              <div className="flex gap-4 items-start">
-                <div className="w-12 h-12 rounded-full bg-blue-light/30 shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-blue-light/20 rounded w-1/4" />
-                  <div className="h-4 bg-blue-light/10 rounded w-5/6" />
+
+              <div className="h-px w-full bg-gray-100" />
+
+              {/* Card 2 */}
+              <div className="flex gap-4 items-center">
+                <div className="w-12 h-12 rounded-full bg-blue-light/20 flex items-center justify-center text-blue-light font-semibold shrink-0 ring-1 ring-blue-light/30">
+                  RO
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="font-semibold text-text-main text-sm">Roberto Oliveira</p>
+                    <div className="flex items-center gap-1 text-yellow-500">
+                      <Star className="h-3.5 w-3.5 fill-current" />
+                      <span className="text-xs font-medium text-text-secondary">4.9</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-text-secondary">Técnico de Enfermagem • Florianópolis</p>
                 </div>
               </div>
-              <div className="flex gap-4 items-start">
-                <div className="w-12 h-12 rounded-full bg-green-light/40 shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-green-light/30 rounded w-1/2" />
-                  <div className="h-4 bg-green-light/20 rounded w-2/3" />
+
+              <div className="h-px w-full bg-gray-100" />
+
+              {/* Card 3 */}
+              <div className="flex gap-4 items-center">
+                <div className="w-12 h-12 rounded-full bg-green-light/30 flex items-center justify-center text-green-700 font-semibold shrink-0 ring-1 ring-green-light/50">
+                  JF
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <p className="font-semibold text-text-main text-sm">Juliana Freitas</p>
+                    <div className="flex items-center gap-1 text-yellow-500">
+                      <Star className="h-3.5 w-3.5 fill-current" />
+                      <span className="text-xs font-medium text-text-secondary">5.0</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-text-secondary">Babá • Palhoça</p>
                 </div>
               </div>
+
             </div>
           </div>
 

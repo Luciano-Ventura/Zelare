@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LINKS, NAVIGATION } from "@/lib/constants";
-import { MessageCircle, Heart } from "lucide-react";
+import { WhatsAppIcon } from "./WhatsAppIcon";
+import { Heart } from "lucide-react";
 
 export default function Header() {
   return (
@@ -29,13 +30,13 @@ export default function Header() {
 
         <div className="flex items-center gap-4">
           <a
-            href={LINKS.whatsapp}
+            href={LINKS.whatsappGeneral}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-full bg-blue-light px-4 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-105"
+            className="hidden items-center justify-center gap-2 rounded-full bg-blue-light px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-light/90 lg:flex shadow-sm"
           >
-            <MessageCircle className="h-4 w-4" />
-            <span className="hidden sm:inline-block">Falar pelo WhatsApp</span>
+            <WhatsAppIcon className="h-4 w-4" />
+            Falar pelo WhatsApp
           </a>
         </div>
       </div>

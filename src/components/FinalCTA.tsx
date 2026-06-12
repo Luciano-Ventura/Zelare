@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { LINKS } from "@/lib/constants";
-import { MessageCircle } from "lucide-react";
+import { WhatsAppIcon } from "./WhatsAppIcon";
 
 export default function FinalCTA() {
   return (
@@ -18,7 +18,7 @@ export default function FinalCTA() {
           Conte para a Zelare o que você precisa. Nossa equipe vai analisar sua solicitação e retornar pelo WhatsApp.
         </p>
         
-        <div className="flex flex-col items-center gap-4 sm:flex-row justify-center">
+        <div className="flex flex-col items-center gap-4 sm:flex-row justify-center w-full max-w-3xl mx-auto">
           <Link
             href={LINKS.requestCare}
             className="w-full sm:w-auto rounded-2xl bg-blue-light px-8 py-4 text-center text-lg font-semibold text-white shadow-lg shadow-blue-light/30 transition-transform hover:-translate-y-1"
@@ -34,15 +34,15 @@ export default function FinalCTA() {
             Cadastrar como profissional
           </Link>
         </div>
-        <div className="mt-4 flex justify-center">
+        <div className="mt-4 flex justify-center w-full max-w-3xl mx-auto">
           <a
             href={LINKS.whatsappGeneral}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full sm:w-auto rounded-2xl bg-transparent px-8 py-4 text-center text-lg font-semibold text-text-secondary transition-transform hover:-translate-y-1 hover:text-text-main flex items-center justify-center gap-2"
+            className="w-full sm:w-auto rounded-2xl bg-transparent px-8 py-4 text-center text-lg font-semibold text-text-secondary transition-transform hover:-translate-y-1 hover:text-text-main flex items-center justify-center gap-2 ring-1 ring-transparent hover:ring-sand-light/50 hover:bg-sand-light/10"
             onClick={() => console.log('clique_whatsapp')}
           >
-            <MessageCircle className="h-5 w-5" />
+            <WhatsAppIcon className="h-5 w-5" />
             Falar pelo WhatsApp
           </a>
         </div>

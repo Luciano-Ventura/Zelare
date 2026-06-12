@@ -46,6 +46,24 @@ export const HERO_CARDS = [
   }
 ];
 
+export const HERO_IMAGES = [
+  {
+    desktopSrc: "/images/hero/hero_new_2_desktop.webp",
+    mobileSrc: "/images/hero/hero_new_2_mobile.webp",
+    alt: "Cuidadora conversando alegremente com idosa em casa"
+  },
+  {
+    desktopSrc: "/images/hero/hero_new_3_desktop.webp",
+    mobileSrc: "/images/hero/hero_new_3_mobile.webp",
+    alt: "Idosa sorrindo na cadeira de rodas em um parque com sua cuidadora"
+  },
+  {
+    desktopSrc: "/images/hero/hero_new_1_desktop.webp",
+    mobileSrc: "/images/hero/hero_new_1_mobile.webp",
+    alt: "Mãos demonstrando cuidado, confiança e acolhimento"
+  }
+];
+
 export const TRUST_CARDS = [
   {
     title: "Cadastro analisado",

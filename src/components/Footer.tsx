@@ -52,9 +52,12 @@ export default function Footer() {
 
           <div>
             <h3 className="font-semibold text-text-main mb-4">Aviso Legal</h3>
-            <p className="text-xs text-text-secondary leading-relaxed">
+            <p className="text-xs text-text-secondary leading-relaxed mb-4">
               A Zelare está em fase inicial de validação. A disponibilidade de profissionais depende da região, horário, perfil solicitado e cadastros ativos. A Zelare não realiza atendimento médico de emergência.
             </p>
+            <Link href="/politica-de-privacidade" className="text-xs text-text-secondary hover:text-text-main transition-colors underline underline-offset-2">
+              Política de Privacidade
+            </Link>
           </div>
 
         </div>
