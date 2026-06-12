@@ -7,9 +7,21 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+import { Viewport } from "next";
+
+export const viewport: Viewport = {
+  themeColor: "#8ECADF",
+};
+
 export const metadata: Metadata = {
   title: "Zelare | Cuidadores, babás e profissionais de enfermagem",
   description: "A Zelare conecta famílias a cuidadores, babás e profissionais de enfermagem para plantões avulsos ou recorrentes, com segurança, agilidade e confiança.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Zelare",
+  },
 };
 
 export default function RootLayout({
