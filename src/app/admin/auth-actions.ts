@@ -11,14 +11,23 @@ export async function login(formData: FormData) {
     return { error: "Email e senha são obrigatórios." };
   }
 
-  const supabase = await createClient();
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { error: "Erro crítico: Variáveis de Ambiente do Supabase não configuradas no Vercel." };
+  }
+
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (err) {
+    return { error: "Falha ao inicializar o cliente Supabase." };
+  }
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
-  if (error || !data.user) {
+  if (error || !data?.user) {
     return { error: "Credenciais inválidas." };
   }
 
