@@ -157,6 +157,7 @@ export function StartPlantaoModal({
       profissional_id: formData.profissional_id,
       data_plantao: dataStr,
       horario_inicio: formData.horario_inicio,
+      horario_fim: formData.horario_fim,
       duracao: duracaoCalc,
       valor_profissional: parseFloat(formData.valor_profissional),
       taxa_zelare: taxaZelare,
