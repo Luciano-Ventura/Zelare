@@ -20,7 +20,7 @@ export async function registrarAcaoPlantao(plantaoId: string, acao: string, chec
   }
 
   const agora = new Date().toISOString();
-  let updateData: any = {};
+  const updateData: any = {};
 
   if (acao === "Estou a caminho") {
     updateData.status_profissional = "A caminho";

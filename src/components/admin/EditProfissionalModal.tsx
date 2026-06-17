@@ -45,7 +45,7 @@ export function EditProfissionalModal({ prof }: { prof: any }) {
         const viaCepData = await viaCepRes.json();
         
         if (!viaCepData.erro) {
-          let updatedForm = {
+          const updatedForm = {
             ...formData,
             endereco_base_cep: cep,
             endereco_base_completo: viaCepData.logradouro,

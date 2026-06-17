@@ -22,7 +22,7 @@ export const maskCurrency = (value: string | undefined) => {
   if (!value) return "";
   
   // Remove tudo que não é dígito
-  let v = value.replace(/\D/g, "");
+  const v = value.replace(/\D/g, "");
   
   // Converte para número e divide por 100 para ter os centavos
   const num = Number(v) / 100;

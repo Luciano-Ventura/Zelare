@@ -119,7 +119,7 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
       else if (solic.duracao_plantao.includes("6h")) duracaoHoras = 6;
       else if (solic.duracao_plantao.includes("4h")) duracaoHoras = 4;
       
-      let endDate = new Date(startDate.getTime() + duracaoHoras * 60 * 60 * 1000);
+      const endDate = new Date(startDate.getTime() + duracaoHoras * 60 * 60 * 1000);
       finalInicioEm = startDate.toISOString();
       finalFimEm = endDate.toISOString();
     }

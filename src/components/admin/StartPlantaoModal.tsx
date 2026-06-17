@@ -101,7 +101,7 @@ export function StartPlantaoModal({
       const baseDate = formData.data_plantao || formData.data_inicial || new Date().toISOString().split("T")[0];
       const startIso = `${baseDate}T${formData.horario_inicio}:00-03:00`;
       const startDate = new Date(startIso);
-      let endDate = new Date(`${baseDate}T${formData.horario_fim}:00-03:00`);
+      const endDate = new Date(`${baseDate}T${formData.horario_fim}:00-03:00`);
       
       if (endDate < startDate) endDate.setDate(endDate.getDate() + 1); 
 
@@ -110,7 +110,7 @@ export function StartPlantaoModal({
         setDuracaoCalc(`${diffHrs}h`);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [formData.horario_inicio, formData.horario_fim, formData.data_plantao, formData.data_inicial]);
 
   // Filtering Profs

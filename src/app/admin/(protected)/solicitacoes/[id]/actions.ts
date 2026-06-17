@@ -39,7 +39,7 @@ export async function createPlantao(data: {
       
       const startIso = `${dataIso}T${data.horario_inicio}:00-03:00`;
       const startDate = new Date(startIso);
-      let endDate = new Date(`${dataIso}T${data.horario_fim}:00-03:00`);
+      const endDate = new Date(`${dataIso}T${data.horario_fim}:00-03:00`);
       
       // Cruza meia-noite
       if (endDate < startDate) {
@@ -213,8 +213,8 @@ export async function previewPlantoesEmLote(data: {
     if (start > end) throw new Error("A data inicial não pode ser maior que a final.");
     
     // Gerar datas
-    let dates: Date[] = [];
-    let curr = new Date(start);
+    const dates: Date[] = [];
+    const curr = new Date(start);
     while (curr <= end) {
       if (data.dias_semana.includes(curr.getDay())) {
         dates.push(new Date(curr));
@@ -234,7 +234,7 @@ export async function previewPlantoesEmLote(data: {
       const dIso = d.toISOString().split("T")[0];
       const startIso = `${dIso}T${data.horario_inicio}:00-03:00`;
       const startDate = new Date(startIso);
-      let endDate = new Date(`${dIso}T${data.horario_fim}:00-03:00`);
+      const endDate = new Date(`${dIso}T${data.horario_fim}:00-03:00`);
       
       if (endDate < startDate) {
         endDate.setDate(endDate.getDate() + 1);
@@ -262,16 +262,16 @@ export async function previewPlantoesEmLote(data: {
 
     if (errOcup) throw new Error("Erro ao consultar agenda do profissional.");
 
-    let disponiveis: any[] = [];
-    let conflitos: any[] = [];
+    const disponiveis: any[] = [];
+    const conflitos: any[] = [];
 
-    for (let ag of agendamentos) {
+    for (const ag of agendamentos) {
       const agStart = new Date(ag.inicio_em);
       const agEnd = new Date(ag.fim_em);
       
       let hasConflict = false;
       if (ocupacoes) {
-        for (let oc of ocupacoes) {
+        for (const oc of ocupacoes) {
           const ocStart = new Date(oc.inicio_em);
           const ocEnd = new Date(oc.fim_em);
           if (ocStart < agEnd && ocEnd > agStart) {
@@ -379,8 +379,8 @@ export async function createPlantoesEmLote(data: {
     if (errPacote || !pacote) throw new Error("Erro ao criar o pacote: " + errPacote?.message);
 
     // 4. Inserir Plantões, Pagamento Único, Repasses
-    let insertPlantoes = [];
-    let insertRepasses = [];
+    const insertPlantoes = [];
+    const insertRepasses = [];
     
     for (let i = 0; i < data.datas_aprovadas.length; i++) {
       const d = data.datas_aprovadas[i];
