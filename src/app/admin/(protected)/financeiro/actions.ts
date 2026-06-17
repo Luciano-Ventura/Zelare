@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { revalidatePath } from "next/cache";
 
-export async function savePaymentLink(pagamentoId: string, link: string) {
+export async function savePaymentLink(pagamentoId: string, link: string): Promise<{ success: boolean; error?: string }> {
   await requireAdmin();
   try {
     const { error } = await supabaseAdmin
@@ -16,11 +16,11 @@ export async function savePaymentLink(pagamentoId: string, link: string) {
     revalidatePath("/admin/financeiro");
     return { success: true };
   } catch (err: any) {
-    return { error: err.message };
+    return { success: false, error: err.message };
   }
 }
 
-export async function markAsPaid(pagamentoId: string, plantaoId: string | null, solicitacaoId: string, pacoteId?: string | null) {
+export async function markAsPaid(pagamentoId: string, plantaoId: string | null, solicitacaoId: string, pacoteId?: string | null): Promise<{ success: boolean; error?: string }> {
   await requireAdmin();
   try {
     const agora = new Date().toISOString();
@@ -89,11 +89,11 @@ export async function markAsPaid(pagamentoId: string, plantaoId: string | null, 
     
     return { success: true };
   } catch (err: any) {
-    return { error: err.message };
+    return { success: false, error: err.message };
   }
 }
 
-export async function markRepasseAsDone(repasseId: string) {
+export async function markRepasseAsDone(repasseId: string): Promise<{ success: boolean; error?: string }> {
   await requireAdmin();
   try {
     const agora = new Date().toISOString();
@@ -111,6 +111,6 @@ export async function markRepasseAsDone(repasseId: string) {
     revalidatePath("/admin/financeiro");
     return { success: true };
   } catch (err: any) {
-    return { error: err.message };
+    return { success: false, error: err.message };
   }
 }

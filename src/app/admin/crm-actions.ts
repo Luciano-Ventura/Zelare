@@ -50,75 +50,79 @@ export async function addObservacaoInterna(entidade_tipo: string, entidade_id: s
   return { success: true };
 }
 
-export async function confirmarPagamento({ plantaoId, pacoteId, solicitacaoId }: { plantaoId?: string, pacoteId?: string, solicitacaoId: string }) {
-  const admin = await requireAdmin();
+export async function confirmarPagamento({ plantaoId, pacoteId, solicitacaoId }: { plantaoId?: string, pacoteId?: string, solicitacaoId: string }): Promise<{success: boolean, error?: string}> {
+  try {
+    const admin = await requireAdmin();
 
-  if (pacoteId) {
-    // É um pacote
-    await supabaseAdmin
-      .from("pagamentos")
-      .update({ status_pagamento: "Pago", pago_em: new Date().toISOString() })
-      .eq("pacote_id", pacoteId);
+    if (pacoteId) {
+      // É um pacote
+      await supabaseAdmin
+        .from("pagamentos")
+        .update({ status_pagamento: "Pago", pago_em: new Date().toISOString() })
+        .eq("pacote_id", pacoteId);
 
-    await supabaseAdmin
-      .from("pacotes_plantoes")
-      .update({ status: "Pago" })
-      .eq("id", pacoteId);
+      await supabaseAdmin
+        .from("pacotes_plantoes")
+        .update({ status: "Pago" })
+        .eq("id", pacoteId);
 
-    const { data: plantoesPacote } = await supabaseAdmin
-      .from("plantoes")
-      .select("id, status")
-      .eq("pacote_id", pacoteId);
+      const { data: plantoesPacote } = await supabaseAdmin
+        .from("plantoes")
+        .select("id, status")
+        .eq("pacote_id", pacoteId);
 
-    if (plantoesPacote) {
-      for (const p of plantoesPacote) {
-        const newStatus = (p.status === "Concluído" || p.status === "Cancelado" || p.status === "Em andamento") ? p.status : "Confirmado";
-        await supabaseAdmin
-          .from("plantoes")
-          .update({ status: newStatus, status_financeiro: "Pagamento confirmado" })
-          .eq("id", p.id);
+      if (plantoesPacote) {
+        for (const p of plantoesPacote) {
+          const newStatus = (p.status === "Concluído" || p.status === "Cancelado" || p.status === "Em andamento") ? p.status : "Confirmado";
+          await supabaseAdmin
+            .from("plantoes")
+            .update({ status: newStatus, status_financeiro: "Pagamento confirmado" })
+            .eq("id", p.id);
+        }
       }
+
+    } else if (plantaoId) {
+      // É um plantão avulso
+      await supabaseAdmin
+        .from("pagamentos")
+        .update({ status_pagamento: "Pago", pago_em: new Date().toISOString() })
+        .eq("plantao_id", plantaoId);
+
+      const { data: plantao } = await supabaseAdmin.from("plantoes").select("status").eq("id", plantaoId).single();
+      const newStatus = (plantao?.status === "Concluído" || plantao?.status === "Cancelado" || plantao?.status === "Em andamento") ? plantao?.status : "Confirmado";
+
+      await supabaseAdmin
+        .from("plantoes")
+        .update({ status: newStatus, status_financeiro: "Pagamento confirmado" })
+        .eq("id", plantaoId);
     }
 
-  } else if (plantaoId) {
-    // É um plantão avulso
+    // Atualizar Solicitação
     await supabaseAdmin
-      .from("pagamentos")
-      .update({ status_pagamento: "Pago", pago_em: new Date().toISOString() })
-      .eq("plantao_id", plantaoId);
+      .from("familias_solicitacoes")
+      .update({ status: "Confirmado" })
+      .eq("id", solicitacaoId);
 
-    const { data: plantao } = await supabaseAdmin.from("plantoes").select("status").eq("id", plantaoId).single();
-    const newStatus = (plantao?.status === "Concluído" || plantao?.status === "Cancelado" || plantao?.status === "Em andamento") ? plantao?.status : "Confirmado";
-
+    // Adicionar Observação
     await supabaseAdmin
-      .from("plantoes")
-      .update({ status: newStatus, status_financeiro: "Pagamento confirmado" })
-      .eq("id", plantaoId);
+      .from("observacoes_internas")
+      .insert([{
+        entidade_tipo: "solicitacao",
+        entidade_id: solicitacaoId,
+        autor: admin.nome || admin.email,
+        observacao: pacoteId ? "Admin confirmou pagamento do PACOTE." : "Admin confirmou pagamento do PLANTÃO ÚNICO."
+      }]);
+
+    const { data } = await supabaseAdmin.from("familias_solicitacoes").select("codigo_acompanhamento").eq("id", solicitacaoId).single();
+    if (data?.codigo_acompanhamento) {
+      revalidatePath(`/acompanhar/${data.codigo_acompanhamento}`);
+    }
+    revalidatePath(`/admin/solicitacoes/${solicitacaoId}`);
+    revalidatePath(`/admin/solicitacoes`);
+    revalidatePath(`/admin`);
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Erro desconhecido" };
   }
-
-  // Atualizar Solicitação
-  await supabaseAdmin
-    .from("familias_solicitacoes")
-    .update({ status: "Confirmado" })
-    .eq("id", solicitacaoId);
-
-  // Adicionar Observação
-  await supabaseAdmin
-    .from("observacoes_internas")
-    .insert([{
-      entidade_tipo: "solicitacao",
-      entidade_id: solicitacaoId,
-      autor: admin.nome || admin.email,
-      observacao: pacoteId ? "Admin confirmou pagamento do PACOTE." : "Admin confirmou pagamento do PLANTÃO ÚNICO."
-    }]);
-
-  const { data } = await supabaseAdmin.from("familias_solicitacoes").select("codigo_acompanhamento").eq("id", solicitacaoId).single();
-  if (data?.codigo_acompanhamento) {
-    revalidatePath(`/acompanhar/${data.codigo_acompanhamento}`);
-  }
-  revalidatePath(`/admin/solicitacoes/${solicitacaoId}`);
-  revalidatePath(`/admin/solicitacoes`);
-  revalidatePath(`/admin`);
-
-  return { success: true };
 }
