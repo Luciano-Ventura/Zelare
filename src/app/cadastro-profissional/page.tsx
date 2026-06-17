@@ -23,7 +23,7 @@ function CadastroProfissionalForm() {
     setValue,
     formState: { errors },
   } = useForm<ProfissionalData>({
-    resolver: zodResolver(profissionalSchema),
+    resolver: zodResolver(profissionalSchema) as any,
     defaultValues: {
       possui_formacao: false,
       possui_referencias: false,
