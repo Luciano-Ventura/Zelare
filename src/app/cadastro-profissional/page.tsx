@@ -26,6 +26,8 @@ function CadastroProfissionalForm() {
     defaultValues: {
       possui_formacao: false,
       possui_referencias: false,
+      raio_atendimento_km: 10,
+      aceita_negociacao: true,
     }
   });
 
