@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabaseAdmin";
 import { familiaSchema, profissionalSchema, FamiliaData, ProfissionalData } from "@/lib/schemas";
+import { geocodeAddress } from "@/lib/geo";
 
 export async function submitFamilia(data: FamiliaData) {
   // 1. Validação no lado do servidor para garantir que os dados não foram adulterados
@@ -15,12 +16,31 @@ export async function submitFamilia(data: FamiliaData) {
   // 2. Extrair booleanos para conversão em timestamp
   const now = new Date().toISOString();
   
+  const codigoAcompanhamento = `ZEL-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+  const enderecoCompletoBusca = `${validData.endereco}, ${validData.numero}, ${validData.bairro}, ${validData.cidade}, ${validData.estado}, ${validData.cep}, Brasil`;
+  const geo = await geocodeAddress(enderecoCompletoBusca);
+
   // 3. Montar payload do banco (sem as chaves booleanas do frontend que viraram timestamps)
   const dbPayload = {
     nome_completo: validData.nome_completo,
     whatsapp: validData.whatsapp.replace(/\D/g, ""),
     cidade: validData.cidade,
     bairro: validData.bairro,
+    
+    // Novos campos de endereço
+    endereco_completo: validData.endereco,
+    endereco_numero: validData.numero,
+    endereco_complemento: validData.complemento || null,
+    endereco_bairro: validData.bairro,
+    endereco_cidade: validData.cidade,
+    endereco_estado: validData.estado,
+    endereco_cep: validData.cep,
+    ponto_referencia: validData.ponto_referencia || null,
+    latitude: geo?.latitude || null,
+    longitude: geo?.longitude || null,
+    localizacao_pendente: geo ? false : true,
+
     para_quem: validData.para_quem,
     tipo_profissional: validData.tipo_profissional,
     data_desejada: validData.data_desejada,
@@ -28,7 +48,7 @@ export async function submitFamilia(data: FamiliaData) {
     duracao_plantao: validData.duracao_plantao,
     e_urgente: validData.e_urgente,
     atividades_necessarias: validData.atividades_necessarias || null,
-    valor_sugerido: validData.valor_sugerido || null,
+    // valor_sugerido: validData.valor_sugerido || null,
     observacoes: validData.observacoes || null,
     
     // Status e timestamps
@@ -41,6 +61,9 @@ export async function submitFamilia(data: FamiliaData) {
     utm_source: validData.utm_source || null,
     utm_medium: validData.utm_medium || null,
     utm_campaign: validData.utm_campaign || null,
+
+    // Portal Familia
+    codigo_acompanhamento: codigoAcompanhamento,
   };
 
   // 4. Inserir no Supabase usando o cliente admin (Service Role)
@@ -70,12 +93,29 @@ export async function submitProfissional(data: ProfissionalData) {
   const validData = parsed.data;
   const now = new Date().toISOString();
 
+  const enderecoCompletoBusca = `${validData.endereco_base}, ${validData.numero_base}, ${validData.bairro}, ${validData.cidade}, ${validData.estado}, ${validData.cep_base}, Brasil`;
+  const geo = await geocodeAddress(enderecoCompletoBusca);
+
   // 3. Montar payload do banco
   const dbPayload = {
     nome_completo: validData.nome_completo,
     whatsapp: validData.whatsapp.replace(/\D/g, ""),
     cidade: validData.cidade,
     bairro: validData.bairro,
+
+    // Novos campos de endereço base
+    endereco_base_completo: validData.endereco_base,
+    endereco_base_numero: validData.numero_base,
+    endereco_base_complemento: validData.complemento_base || null,
+    endereco_base_bairro: validData.bairro,
+    endereco_base_cidade: validData.cidade,
+    endereco_base_estado: validData.estado,
+    endereco_base_cep: validData.cep_base,
+    latitude_base: geo?.latitude || null,
+    longitude_base: geo?.longitude || null,
+    raio_atendimento_km: validData.raio_atendimento_km,
+    localizacao_pendente: geo ? false : true,
+
     categoria_profissional: validData.categoria_profissional,
     tipos_atendimento: validData.tipos_atendimento,
     tempo_experiencia: validData.tempo_experiencia,

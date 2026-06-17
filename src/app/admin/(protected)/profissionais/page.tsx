@@ -2,32 +2,56 @@ import { requireAdmin } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import Link from "next/link";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { Search } from "lucide-react";
+import { SearchInput } from "@/components/admin/SearchInput";
+import { PaginationControls } from "@/components/admin/PaginationControls";
+import { EmptyState } from "@/components/admin/EmptyState";
+import { ProfissionaisFilters } from "./ProfissionaisFilters";
+import { sortProfissionais } from "@/lib/sortPriority";
 
 export const revalidate = 0;
 
-export default async function ProfissionaisPage() {
+export default async function ProfissionaisPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   await requireAdmin();
+  const resolvedSearchParams = await searchParams;
 
-  const { data: profissionais } = await supabaseAdmin
+  const statusParam = typeof resolvedSearchParams.status === "string" ? resolvedSearchParams.status : null;
+  const busca = typeof resolvedSearchParams.busca === "string" ? resolvedSearchParams.busca : null;
+  const cidade = typeof resolvedSearchParams.cidade === "string" ? resolvedSearchParams.cidade : null;
+  const categoria = typeof resolvedSearchParams.categoria === "string" ? resolvedSearchParams.categoria : null;
+  
+  const page = typeof resolvedSearchParams.page === "string" ? parseInt(resolvedSearchParams.page, 10) : 1;
+  const pageSize = typeof resolvedSearchParams.pageSize === "string" ? parseInt(resolvedSearchParams.pageSize, 10) : 20;
+
+  let query = supabaseAdmin
     .from("profissionais_cadastros")
-    .select("id, nome_completo, cidade, bairro, categoria_profissional, status, created_at")
-    .order("created_at", { ascending: false });
+    .select("id, nome_completo, cidade, bairro, categoria_profissional, status, created_at", { count: 'exact' });
+
+  if (statusParam === "validacao") {
+    query = query.in("status", ["Novo cadastro", "Em análise", "Aguardando informações"]);
+  } else if (statusParam) {
+    query = query.eq("status", statusParam);
+  }
+
+  if (busca) query = query.ilike("nome_completo", `%${busca}%`);
+  if (cidade) query = query.ilike("cidade", `%${cidade}%`);
+  if (categoria) query = query.eq("categoria_profissional", categoria);
+
+  const { data: allFiltrados, count } = await query;
+  let profissionais = allFiltrados || [];
+
+  if (profissionais.length > 0) {
+    profissionais = sortProfissionais(profissionais);
+    profissionais = profissionais.slice((page - 1) * pageSize, page * pageSize);
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-text-main tracking-tight">Profissionais Cadastrados</h1>
-        
-        <div className="relative w-full sm:w-auto">
-          <input 
-            type="text" 
-            placeholder="Buscar profissionais..." 
-            className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-light"
-          />
-          <Search className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" />
-        </div>
+        <SearchInput placeholder="Buscar por nome..." paramName="busca" />
       </div>
+
+      <ProfissionaisFilters />
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
@@ -81,15 +105,15 @@ export default async function ProfissionaisPage() {
               ))}
               
               {(!profissionais || profissionais.length === 0) && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-text-secondary">
-                    Nenhum profissional encontrado.
-                  </td>
-                </tr>
+                <EmptyState message="Nenhum profissional encontrado com os filtros atuais." />
               )}
             </tbody>
           </table>
         </div>
+        
+        {count !== null && count > 0 && (
+          <PaginationControls totalItems={count} pageSize={pageSize} />
+        )}
       </div>
     </div>
   );

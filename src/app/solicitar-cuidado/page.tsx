@@ -14,6 +14,7 @@ function SolicitarCuidadoForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingCep, setIsFetchingCep] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const {
@@ -119,16 +120,79 @@ function SolicitarCuidadoForm() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="cidade" className="block text-sm font-medium text-text-main mb-1">Cidade</label>
+                  <label htmlFor="cep" className="block text-sm font-medium text-text-main mb-1 flex justify-between items-center">
+                    CEP {isFetchingCep && <span className="text-blue-500 font-normal text-xs">buscando...</span>}
+                  </label>
                   <input
-                    id="cidade"
+                    id="cep"
                     type="text"
-                    {...register("cidade")}
+                    {...register("cep", {
+                      onChange: async (e) => {
+                        const rawCep = e.target.value;
+                        const cleanCep = rawCep.replace(/\D/g, "");
+                        if (cleanCep.length === 8) {
+                          setIsFetchingCep(true);
+                          try {
+                            const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+                            const data = await res.json();
+                            if (!data.erro) {
+                              setValue("endereco", data.logradouro);
+                              setValue("bairro", data.bairro);
+                              setValue("cidade", data.localidade);
+                              setValue("estado", data.uf);
+                            }
+                          } catch (err) {
+                            console.error("Erro ao buscar CEP", err);
+                          }
+                          setIsFetchingCep(false);
+                        }
+                      }
+                    })}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
-                    placeholder="Ex: Florianópolis"
+                    placeholder="Ex: 88000-000"
+                    maxLength={9}
                   />
-                  {errors.cidade && <p className="mt-1 text-xs text-red-500">{errors.cidade.message}</p>}
+                  {errors.cep && <p className="mt-1 text-xs text-red-500">{errors.cep.message}</p>}
                 </div>
+                <div>
+                  <label htmlFor="endereco" className="block text-sm font-medium text-text-main mb-1">Endereço (Rua/Avenida)</label>
+                  <input
+                    id="endereco"
+                    type="text"
+                    {...register("endereco")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                    placeholder="Ex: Rua das Flores"
+                  />
+                  {errors.endereco && <p className="mt-1 text-xs text-red-500">{errors.endereco.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="numero" className="block text-sm font-medium text-text-main mb-1">Número</label>
+                  <input
+                    id="numero"
+                    type="text"
+                    {...register("numero")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                    placeholder="Ex: 123"
+                  />
+                  {errors.numero && <p className="mt-1 text-xs text-red-500">{errors.numero.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="complemento" className="block text-sm font-medium text-text-main mb-1">Complemento (Opcional)</label>
+                  <input
+                    id="complemento"
+                    type="text"
+                    {...register("complemento")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                    placeholder="Ex: Apto 101, Bloco B"
+                  />
+                  {errors.complemento && <p className="mt-1 text-xs text-red-500">{errors.complemento.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="bairro" className="block text-sm font-medium text-text-main mb-1">Bairro</label>
                   <input
@@ -140,6 +204,41 @@ function SolicitarCuidadoForm() {
                   />
                   {errors.bairro && <p className="mt-1 text-xs text-red-500">{errors.bairro.message}</p>}
                 </div>
+                <div>
+                  <label htmlFor="cidade" className="block text-sm font-medium text-text-main mb-1">Cidade</label>
+                  <input
+                    id="cidade"
+                    type="text"
+                    {...register("cidade")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                    placeholder="Ex: Florianópolis"
+                  />
+                  {errors.cidade && <p className="mt-1 text-xs text-red-500">{errors.cidade.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="estado" className="block text-sm font-medium text-text-main mb-1">Estado (UF)</label>
+                  <input
+                    id="estado"
+                    type="text"
+                    maxLength={2}
+                    {...register("estado")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all uppercase"
+                    placeholder="Ex: SC"
+                  />
+                  {errors.estado && <p className="mt-1 text-xs text-red-500">{errors.estado.message}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="ponto_referencia" className="block text-sm font-medium text-text-main mb-1">Ponto de Referência (Opcional)</label>
+                <input
+                  id="ponto_referencia"
+                  type="text"
+                  {...register("ponto_referencia")}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                  placeholder="Ex: Próximo ao supermercado Angeloni"
+                />
+                {errors.ponto_referencia && <p className="mt-1 text-xs text-red-500">{errors.ponto_referencia.message}</p>}
               </div>
             </div>
 
@@ -176,56 +275,63 @@ function SolicitarCuidadoForm() {
                 {errors.tipo_profissional && <p className="mt-1 text-xs text-red-500">{errors.tipo_profissional.message}</p>}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="data_desejada" className="block text-sm font-medium text-text-main mb-1">Data de início</label>
                   <input
                     id="data_desejada"
-                    type="text"
+                    type="date"
                     {...register("data_desejada")}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
-                    placeholder="Ex: O mais rápido possível, ou 20/06"
                   />
                   {errors.data_desejada && <p className="mt-1 text-xs text-red-500">{errors.data_desejada.message}</p>}
                 </div>
                 <div>
-                  <label htmlFor="horario_desejado" className="block text-sm font-medium text-text-main mb-1">Horário desejado</label>
+                  <label htmlFor="horario_desejado" className="block text-sm font-medium text-text-main mb-1">Horário de Início</label>
                   <input
                     id="horario_desejado"
-                    type="text"
+                    type="time"
                     {...register("horario_desejado")}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
-                    placeholder="Ex: Das 08h às 18h"
                   />
                   {errors.horario_desejado && <p className="mt-1 text-xs text-red-500">{errors.horario_desejado.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="horario_fim" className="block text-sm font-medium text-text-main mb-1">Horário de Término</label>
+                  <input
+                    id="horario_fim"
+                    type="time"
+                    {...register("horario_fim")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                  />
+                  {errors.horario_fim && <p className="mt-1 text-xs text-red-500">{errors.horario_fim.message}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="duracao_plantao" className="block text-sm font-medium text-text-main mb-1">Duração/Frequência</label>
+                  <label htmlFor="duracao_plantao" className="block text-sm font-medium text-text-main mb-1">Frequência da demanda</label>
                   <input
                     id="duracao_plantao"
                     type="text"
                     {...register("duracao_plantao")}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
-                    placeholder="Ex: Apenas um dia, ou Seg a Sex"
+                    placeholder="Ex: Apenas 1 dia, ou de Seg a Sex"
                   />
                   {errors.duracao_plantao && <p className="mt-1 text-xs text-red-500">{errors.duracao_plantao.message}</p>}
                 </div>
                 <div>
-                  <label htmlFor="valor_sugerido" className="block text-sm font-medium text-text-main mb-1">Valor sugerido (R$)</label>
-                  <input
-                    id="valor_sugerido"
-                    type="text"
-                    {...register("valor_sugerido", {
-                      onChange: (e) => {
-                        e.target.value = maskCurrency(e.target.value);
-                      }
-                    })}
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
-                    placeholder="Ex: R$ 150,00 por dia (Opcional)"
-                  />
+                  <label htmlFor="preferencia_atendimento" className="block text-sm font-medium text-text-main mb-1">Preferência de Custo/Atendimento</label>
+                  <select
+                    id="preferencia_atendimento"
+                    {...register("preferencia_atendimento")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all bg-white"
+                  >
+                    <option value="">Selecione (Opcional)</option>
+                    <option value="Opção mais econômica">Opção mais econômica</option>
+                    <option value="Priorizar profissional mais experiente">Priorizar profissional mais experiente</option>
+                    <option value="Quero receber estimativa antes de confirmar">Quero receber estimativa antes de confirmar</option>
+                  </select>
                 </div>
               </div>
 

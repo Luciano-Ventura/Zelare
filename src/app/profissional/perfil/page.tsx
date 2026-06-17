@@ -1,6 +1,7 @@
 import { requireProfissional } from "@/lib/auth-profissional";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { User, Phone, Briefcase, MapPin } from "lucide-react";
+import { AcoesPerfilProfissional } from "@/components/profissional/AcoesPerfilProfissional";
 
 export const revalidate = 0;
 
@@ -54,12 +55,14 @@ export default async function PerfilPage() {
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-center">
-        <p className="text-sm font-medium text-[#2F3437] mb-3">Para alterar seus dados cadastrais ou disponibilidade, entre em contato com a operação.</p>
+      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 text-center mt-6">
+        <p className="text-sm font-medium text-[#2F3437] mb-3">Para alterar sua disponibilidade ou categoria profissional, entre em contato com a operação.</p>
         <a href="https://wa.me/5511999999999" target="_blank" className="inline-block bg-[#8ECADF] text-[#2F3437] font-black py-3 px-6 rounded-xl hover:brightness-95 transition-all">
           Falar com a Zelare
         </a>
       </div>
+
+      <AcoesPerfilProfissional perfil={perfil} />
     </div>
   );
 }

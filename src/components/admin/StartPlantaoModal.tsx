@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createPlantao } from "@/app/admin/(protected)/solicitacoes/[id]/actions";
-import { CalendarClock, X, CheckCircle2, AlertCircle } from "lucide-react";
+import { createPlantao, fetchPricingConfig, previewPlantoesEmLote, createPlantoesEmLote } from "@/app/admin/(protected)/solicitacoes/[id]/actions";
+import { calcularPrecoPlantao, PricingRegiao } from "@/lib/financeiro";
+import { CalendarClock, X, CheckCircle2, AlertCircle, Edit2, CalendarDays, Calendar as CalendarIcon, CheckSquare, Square } from "lucide-react";
 
 type Profissional = {
   id: string;
@@ -10,149 +11,199 @@ type Profissional = {
   categoria_profissional: string;
   cidade: string;
   regioes_atende?: string;
-};
-
-type Ocupacao = {
-  profissional_id: string;
-  inicio_em: string;
-  fim_em: string;
+  valor_minimo_4h?: number;
+  valor_minimo_6h?: number;
+  valor_minimo_8h?: number;
+  valor_minimo_12h?: number;
+  valor_minimo_24h?: number;
 };
 
 export function StartPlantaoModal({ 
-  solicitacaoId, 
-  profissionais, 
-  ocupacoes,
-  defaultData, 
-  defaultHorario, 
-  defaultDuracao 
+  solicitacaoId, solicEstado, solicCidade, profissionais, ocupacoes, defaultData, defaultHorario, defaultDuracao 
 }: { 
-  solicitacaoId: string;
-  profissionais: Profissional[];
-  ocupacoes: Ocupacao[];
-  defaultData: string;
-  defaultHorario: string;
-  defaultDuracao: string;
+  solicitacaoId: string; solicEstado?: string; solicCidade?: string; profissionais: Profissional[]; ocupacoes: any[]; defaultData: string; defaultHorario: string; defaultDuracao: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [step, setStep] = useState(1); // 1: Form, 2: Summary
+  const [step, setStep] = useState(1); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // States Básicos
+  const [tipoAgendamento, setTipoAgendamento] = useState<"unico" | "pacote">("unico");
   const [busca, setBusca] = useState("");
+  
+  // Form Data
   const [formData, setFormData] = useState({
     profissional_id: "",
-    data_plantao: "", 
+    data_plantao: "", // para único
+    data_inicial: "", // para pacote
+    data_final: "", // para pacote
+    dias_semana: [] as number[], // para pacote
     horario_inicio: "",
     horario_fim: "",
     valor_profissional: "",
+    taxa_zelare: "",
+    total_familia: "",
+    houve_ajuste_manual: false,
+    motivo_ajuste_manual: "",
   });
 
-  const [taxaZelare, setTaxaZelare] = useState(0);
-  const [totalFamilia, setTotalFamilia] = useState(0);
   const [duracaoCalc, setDuracaoCalc] = useState("");
-  const [inicioEmCalc, setInicioEmCalc] = useState("");
-  const [fimEmCalc, setFimEmCalc] = useState("");
   const [profissionaisDisponiveis, setProfissionaisDisponiveis] = useState<Profissional[]>([]);
+  const [pricingConfig, setPricingConfig] = useState<PricingRegiao | null>(null);
+  const [calcResult, setCalcResult] = useState<any>(null);
+  
+  // Preview Pacote
+  const [previewResult, setPreviewResult] = useState<any>(null);
 
-  // Parse default date if it's DD/MM/YYYY
+  const DIAS = [
+    { id: 1, label: "Seg" }, { id: 2, label: "Ter" }, { id: 3, label: "Qua" },
+    { id: 4, label: "Qui" }, { id: 5, label: "Sex" }, { id: 6, label: "Sáb" }, { id: 0, label: "Dom" }
+  ];
+
+  const toggleDia = (id: number) => {
+    setFormData(prev => ({
+      ...prev,
+      dias_semana: prev.dias_semana.includes(id) 
+        ? prev.dias_semana.filter(d => d !== id)
+        : [...prev.dias_semana, id]
+    }));
+  };
+
+  // Reset errors on close
   useEffect(() => {
-    if (defaultData && defaultData.includes("/")) {
-      const parts = defaultData.split("/");
-      if (parts.length === 3) {
-        setFormData(prev => ({ ...prev, data_plantao: `${parts[2]}-${parts[1]}-${parts[0]}` }));
-      }
+    if (!isOpen) {
+      setStep(1); setError(null); setPreviewResult(null);
     }
-  }, [defaultData]);
+  }, [isOpen]);
 
-  // Recalculate everything when time or value changes
+  // Pricing Fetch
   useEffect(() => {
-    if (formData.data_plantao && formData.horario_inicio && formData.horario_fim) {
-      // SP Timezone (UTC-3)
-      const startIso = `${formData.data_plantao}T${formData.horario_inicio}:00-03:00`;
+    if (isOpen && (duracaoCalc || defaultDuracao)) {
+      const getPricing = async () => {
+        let duracaoHoras = 12;
+        const durStr = duracaoCalc || defaultDuracao || "";
+        if (durStr.includes("24h")) duracaoHoras = 24;
+        else if (durStr.includes("8h")) duracaoHoras = 8;
+        else if (durStr.includes("6h")) duracaoHoras = 6;
+        else if (durStr.includes("4h")) duracaoHoras = 4;
+
+        const res = await fetchPricingConfig({ estado: solicEstado, cidade: solicCidade, duracao_horas: duracaoHoras });
+        setPricingConfig(res?.success ? (res.data as PricingRegiao) : null);
+      }
+      getPricing();
+    }
+  }, [isOpen, solicEstado, solicCidade, defaultDuracao, duracaoCalc]);
+
+  // Recalcular duração
+  useEffect(() => {
+    if (formData.horario_inicio && formData.horario_fim) {
+      const baseDate = formData.data_plantao || formData.data_inicial || new Date().toISOString().split("T")[0];
+      const startIso = `${baseDate}T${formData.horario_inicio}:00-03:00`;
       const startDate = new Date(startIso);
-      let endDate = new Date(`${formData.data_plantao}T${formData.horario_fim}:00-03:00`);
+      let endDate = new Date(`${baseDate}T${formData.horario_fim}:00-03:00`);
       
-      if (endDate < startDate) {
-        endDate.setDate(endDate.getDate() + 1); // Cruza meia-noite
+      if (endDate < startDate) endDate.setDate(endDate.getDate() + 1); 
+
+      if (!isNaN(startDate.getTime())) {
+        const diffHrs = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60));
+        setDuracaoCalc(`${diffHrs}h`);
       }
-
-      setInicioEmCalc(startDate.toISOString());
-      setFimEmCalc(endDate.toISOString());
-
-      const diffMs = endDate.getTime() - startDate.getTime();
-      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-      setDuracaoCalc(`${diffHrs}h`);
-
-      // Filter professionals availability
-      const availableProfs = profissionais.filter(p => {
-        // Find if any occupation overlaps
-        const hasConflict = ocupacoes.some(oc => {
-          if (oc.profissional_id !== p.id) return false;
-          const ocStart = new Date(oc.inicio_em);
-          const ocEnd = new Date(oc.fim_em);
-          // Overlap condition: start < end AND end > start
-          return (ocStart < endDate && ocEnd > startDate);
-        });
-        return !hasConflict;
-      });
-
-      setProfissionaisDisponiveis(availableProfs);
-
-      // se o selecionado nao esta disponivel, limpar
-      if (formData.profissional_id && !availableProfs.find(p => p.id === formData.profissional_id)) {
-         setFormData(prev => ({ ...prev, profissional_id: "" }));
-         setBusca("");
-      }
-
-    } else {
-      setProfissionaisDisponiveis(profissionais);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.horario_inicio, formData.horario_fim, formData.data_plantao, formData.data_inicial]);
 
-    const val = parseFloat(formData.valor_profissional) || 0;
-    const taxa = Math.max(20, val * 0.15);
-    setTaxaZelare(taxa);
-    setTotalFamilia(val + taxa);
-
-  }, [formData.data_plantao, formData.horario_inicio, formData.horario_fim, formData.valor_profissional, profissionais, ocupacoes]);
+  // Filtering Profs
+  useEffect(() => {
+    setProfissionaisDisponiveis(profissionais);
+  }, [profissionais]);
 
   const profsFiltradosParaDropdown = profissionaisDisponiveis.filter(p => {
-    const termo = busca.toLowerCase();
-    return (
-      p.nome_completo.toLowerCase().includes(termo) ||
-      p.categoria_profissional?.toLowerCase().includes(termo) ||
-      p.cidade?.toLowerCase().includes(termo) ||
-      p.regioes_atende?.toLowerCase().includes(termo)
-    );
+    const t = busca.toLowerCase();
+    return p.nome_completo.toLowerCase().includes(t) || p.cidade?.toLowerCase().includes(t) || p.categoria_profissional?.toLowerCase().includes(t);
   });
 
-  const handleNext = (e: React.FormEvent) => {
+  // Calculation Unitário
+  useEffect(() => {
+    if (formData.profissional_id && pricingConfig && duracaoCalc) {
+      const p = profissionaisDisponiveis.find(x => x.id === formData.profissional_id);
+      if (!p) return;
+
+      let minVal = null;
+      if (duracaoCalc === "24h" && p.valor_minimo_24h) minVal = p.valor_minimo_24h;
+      else if (duracaoCalc === "12h" && p.valor_minimo_12h) minVal = p.valor_minimo_12h;
+      else if (duracaoCalc === "8h" && p.valor_minimo_8h) minVal = p.valor_minimo_8h;
+
+      const result = calcularPrecoPlantao({ regiao: pricingConfig, profissional: { valor_minimo_usado: minVal || null } });
+      setCalcResult(result);
+      
+      if (!formData.houve_ajuste_manual) {
+        setFormData(prev => ({ 
+          ...prev, 
+          valor_profissional: result.valor_profissional.toString(),
+          taxa_zelare: result.taxa_zelare.toString(),
+          total_familia: result.total_familia.toString()
+        }));
+      }
+    } else {
+      setCalcResult(null);
+    }
+  }, [formData.profissional_id, pricingConfig, duracaoCalc, profissionaisDisponiveis, formData.houve_ajuste_manual]);
+
+  const handleNextStep1 = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.profissional_id) {
-      setError("Selecione um profissional.");
-      return;
+    if (tipoAgendamento === "unico") {
+      if (!formData.data_plantao) return setError("Preencha a data.");
+    } else {
+      if (!formData.data_inicial || !formData.data_final) return setError("Preencha o período inicial e final.");
+      if (formData.dias_semana.length === 0) return setError("Selecione pelo menos um dia da semana.");
+      if (new Date(formData.data_inicial) > new Date(formData.data_final)) return setError("Data inicial não pode ser maior que final.");
     }
-    if (!formData.data_plantao || !formData.horario_inicio || !formData.horario_fim) {
-      setError("Preencha a data e os horários corretamente.");
-      return;
-    }
-    if (!formData.valor_profissional || parseFloat(formData.valor_profissional) <= 0) {
-      setError("Informe o valor do profissional.");
-      return;
-    }
+    if (!formData.horario_inicio || !formData.horario_fim) return setError("Preencha os horários.");
     setError(null);
     setStep(2);
   };
 
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
+  const handleNextStep2 = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.profissional_id) return setError("Selecione o profissional.");
+    if (!formData.valor_profissional || !formData.taxa_zelare) return setError("Valores inválidos.");
+    if (formData.houve_ajuste_manual && formData.motivo_ajuste_manual.length < 5) return setError("Justifique o ajuste manual.");
+    
     setError(null);
+    
+    if (tipoAgendamento === "pacote") {
+      setIsSubmitting(true);
+      const res = await previewPlantoesEmLote({
+        profissional_id: formData.profissional_id,
+        data_inicial: formData.data_inicial,
+        data_final: formData.data_final,
+        dias_semana: formData.dias_semana,
+        horario_inicio: formData.horario_inicio,
+        horario_fim: formData.horario_fim,
+        valor_profissional: parseFloat(formData.valor_profissional),
+        taxa_zelare: parseFloat(formData.taxa_zelare),
+        total_familia: parseFloat(formData.total_familia)
+      });
+      setIsSubmitting(false);
 
-    const profNome = profissionais.find(p => p.id === formData.profissional_id)?.nome_completo || "";
-    // Reformat date to DD/MM/YYYY for text field backward compatibility
+      if (res.error) {
+        setError(res.error);
+        return;
+      }
+      setPreviewResult(res);
+      setStep(3); // Preview de Conflitos
+    } else {
+      setStep(4); // Confirmação Final Unica
+    }
+  };
+
+  const handleCreateUnico = async () => {
+    setIsSubmitting(true);
     const [y, m, d] = formData.data_plantao.split("-");
     const dataStr = `${d}/${m}/${y}`;
 
-    const result = await createPlantao({
+    const res = await createPlantao({
       solicitacao_id: solicitacaoId,
       profissional_id: formData.profissional_id,
       data_plantao: dataStr,
@@ -160,207 +211,232 @@ export function StartPlantaoModal({
       horario_fim: formData.horario_fim,
       duracao: duracaoCalc,
       valor_profissional: parseFloat(formData.valor_profissional),
-      taxa_zelare: taxaZelare,
-      total_familia: totalFamilia,
-      inicio_em: inicioEmCalc,
-      fim_em: fimEmCalc,
+      taxa_zelare: parseFloat(formData.taxa_zelare),
+      total_familia: parseFloat(formData.total_familia),
+      houve_ajuste_manual: formData.houve_ajuste_manual,
+      motivo_ajuste_manual: formData.motivo_ajuste_manual
     });
-
     setIsSubmitting(false);
-
-    if (result.error) {
-      setError(result.error);
-    } else {
-      setIsOpen(false);
-      setStep(1);
-    }
+    if (res.error) setError(res.error);
+    else setIsOpen(false);
   };
+
+  const handleCreatePacote = async () => {
+    setIsSubmitting(true);
+    const res = await createPlantoesEmLote({
+      solicitacao_id: solicitacaoId,
+      profissional_id: formData.profissional_id,
+      data_inicial: formData.data_inicial,
+      data_final: formData.data_final,
+      dias_semana: formData.dias_semana,
+      horario_inicio: formData.horario_inicio,
+      horario_fim: formData.horario_fim,
+      duracao_str: duracaoCalc,
+      valor_profissional: parseFloat(formData.valor_profissional),
+      taxa_zelare: parseFloat(formData.taxa_zelare),
+      total_familia: parseFloat(formData.total_familia),
+      datas_aprovadas: previewResult?.disponiveis || []
+    });
+    setIsSubmitting(false);
+    if (res.error) setError(res.error);
+    else setIsOpen(false);
+  };
+
+  const formatBRL = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   return (
     <>
-      <button 
-        onClick={() => setIsOpen(true)}
-        className="w-full py-2 bg-[#8ECADF] text-[#2F3437] rounded-lg text-sm font-bold hover:brightness-95 transition-all shadow-sm flex items-center justify-center gap-2"
-      >
-        <CalendarClock className="w-4 h-4" />
-        Criar Plantão
+      <button onClick={() => setIsOpen(true)} className="w-full py-2 bg-[#8ECADF] text-[#2F3437] rounded-lg text-sm font-bold hover:brightness-95 transition-all shadow-sm flex items-center justify-center gap-2">
+        <CalendarClock className="w-4 h-4" /> Agendar Plantão ou Pacote
       </button>
 
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#2F3437]/60 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden my-auto border border-white/50">
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden my-auto">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#FAFAF7]">
               <h2 className="text-lg font-bold text-[#2F3437]">
-                {step === 1 ? "Criar Plantão" : "Resumo do Plantão"}
+                {step === 1 && "Configuração de Data"}
+                {step === 2 && "Profissional e Valores"}
+                {step === 3 && "Revisão de Conflitos do Pacote"}
+                {step === 4 && "Confirmação Final"}
               </h2>
-              <button onClick={() => { setIsOpen(false); setStep(1); }} className="text-[#6B7280] hover:text-[#2F3437] transition-colors p-1 rounded-md hover:bg-gray-100">
-                <X className="w-5 h-5" />
-              </button>
+              <button onClick={() => setIsOpen(false)} className="text-[#6B7280] hover:bg-gray-100 p-1 rounded-md"><X className="w-5 h-5" /></button>
             </div>
             
+            {/* STEP 1 */}
             {step === 1 && (
-              <form onSubmit={handleNext} className="p-6 overflow-y-auto space-y-5">
-                {error && <div className="p-3 bg-red-50 text-red-700 text-sm font-medium rounded-xl flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+              <form onSubmit={handleNextStep1} className="p-6 overflow-y-auto space-y-6">
+                {error && <div className="p-3 bg-red-50 text-red-700 text-sm font-medium rounded-xl flex gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="sm:col-span-1">
-                    <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Data</label>
-                    <input 
-                      required type="date"
-                      value={formData.data_plantao} onChange={(e) => setFormData({...formData, data_plantao: e.target.value})}
-                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#8ECADF]/50 focus:border-[#8ECADF] transition-all"
-                    />
-                  </div>
-                  <div className="sm:col-span-1">
-                    <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Início</label>
-                    <input 
-                      required type="time"
-                      value={formData.horario_inicio} onChange={(e) => setFormData({...formData, horario_inicio: e.target.value})}
-                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#8ECADF]/50 focus:border-[#8ECADF] transition-all"
-                    />
-                  </div>
-                  <div className="sm:col-span-1">
-                    <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Fim</label>
-                    <input 
-                      required type="time"
-                      value={formData.horario_fim} onChange={(e) => setFormData({...formData, horario_fim: e.target.value})}
-                      className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#8ECADF]/50 focus:border-[#8ECADF] transition-all"
-                    />
-                  </div>
+                <div className="flex gap-4 p-1 bg-gray-100 rounded-xl">
+                  <button type="button" onClick={() => setTipoAgendamento("unico")} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 ${tipoAgendamento === "unico" ? "bg-white text-[#2F3437] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                    <CalendarIcon className="w-4 h-4" /> Dia Único
+                  </button>
+                  <button type="button" onClick={() => setTipoAgendamento("pacote")} className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 ${tipoAgendamento === "pacote" ? "bg-[#8ECADF] text-[#2F3437] shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
+                    <CalendarDays className="w-4 h-4" /> Pacote / Recorrente
+                  </button>
                 </div>
 
-                <div className="relative">
-                  <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5 flex justify-between">
-                    <span>Buscar Profissional Livre</span>
-                    <span className="text-[#8ECADF]">{profissionaisDisponiveis.length} disponíveis</span>
-                  </label>
-                  <input 
-                    type="text"
-                    placeholder="Digite nome, categoria..."
-                    value={busca}
-                    disabled={!(formData.data_plantao && formData.horario_inicio && formData.horario_fim)}
-                    onChange={(e) => {
-                      setBusca(e.target.value);
-                      if (formData.profissional_id) setFormData({...formData, profissional_id: ""});
-                    }}
-                    onFocus={() => setBusca(busca)}
-                    className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#8ECADF]/50 focus:border-[#8ECADF] transition-all disabled:opacity-50"
-                  />
-                  {!(formData.data_plantao && formData.horario_inicio && formData.horario_fim) && (
-                     <p className="text-[10px] text-orange-600 font-bold mt-1">Preencha Data e Horários primeiro para validar conflitos de agenda.</p>
-                  )}
-                  
-                  {(!formData.profissional_id && busca.length > 0) && (
-                    <div className="absolute z-10 w-full mt-2 bg-white border border-gray-200 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] max-h-56 overflow-y-auto">
-                      {profsFiltradosParaDropdown.length === 0 ? (
-                        <div className="px-4 py-3 text-sm font-medium text-[#6B7280]">Nenhum profissional compatível e disponível encontrado.</div>
-                      ) : (
-                        profsFiltradosParaDropdown.map(p => (
-                          <div 
-                            key={p.id}
-                            className="px-4 py-3 text-sm hover:bg-[#8ECADF]/10 cursor-pointer border-b border-gray-50 last:border-0 transition-colors"
-                            onClick={() => {
-                              setFormData({...formData, profissional_id: p.id});
-                              setBusca(`${p.nome_completo} - ${p.cidade}`);
-                            }}
-                          >
-                            <p className="font-bold text-[#2F3437]">{p.nome_completo}</p>
-                            <p className="text-[10px] uppercase font-bold text-[#6B7280] mt-1">{p.categoria_profissional} • {p.cidade}</p>
-                          </div>
-                        ))
-                      )}
+                {tipoAgendamento === "unico" ? (
+                  <div>
+                    <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Data do Plantão</label>
+                    <input required type="date" value={formData.data_plantao} onChange={(e) => setFormData({...formData, data_plantao: e.target.value})} className="w-full px-3 py-2.5 bg-gray-50 border rounded-xl" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Data Inicial</label>
+                        <input required type="date" value={formData.data_inicial} onChange={(e) => setFormData({...formData, data_inicial: e.target.value})} className="w-full px-3 py-2.5 bg-gray-50 border rounded-xl" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Data Final</label>
+                        <input required type="date" value={formData.data_final} onChange={(e) => setFormData({...formData, data_final: e.target.value})} className="w-full px-3 py-2.5 bg-gray-50 border rounded-xl" />
+                      </div>
                     </div>
-                  )}
-                  
-                  {formData.profissional_id && (
-                    <p className="text-xs font-bold text-[#A8D5BA] mt-2 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4" /> Profissional selecionado e disponível
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Valor do Profissional (R$)</label>
-                  <input 
-                    required type="number" step="0.01" min="1" placeholder="0.00"
-                    value={formData.valor_profissional} onChange={(e) => setFormData({...formData, valor_profissional: e.target.value})}
-                    className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#8ECADF]/50 focus:border-[#8ECADF] transition-all"
-                  />
-                </div>
-
-                {formData.valor_profissional && (
-                  <div className="bg-[#FAFAF7] p-4 rounded-xl border border-gray-100 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#6B7280] font-medium">Duração calculada:</span>
-                      <span className="font-bold text-[#2F3437]">{duracaoCalc}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#6B7280] font-medium">Taxa Zelare (15% ou mín R$20):</span>
-                      <span className="font-bold text-[#2F3437]">R$ {taxaZelare.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
-                      <span className="text-[#6B7280] font-bold">Total a cobrar da família:</span>
-                      <span className="font-black text-[#8ECADF]">R$ {totalFamilia.toFixed(2)}</span>
+                    <div>
+                      <label className="block text-xs font-bold text-[#6B7280] uppercase mb-2">Dias da Semana na Casa</label>
+                      <div className="flex flex-wrap gap-2">
+                        {DIAS.map(d => (
+                          <button key={d.id} type="button" onClick={() => toggleDia(d.id)} className={`px-3 py-2 rounded-lg text-xs font-bold border flex items-center gap-1 ${formData.dias_semana.includes(d.id) ? 'bg-[#A8D5BA] border-[#A8D5BA] text-gray-900' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                            {formData.dias_semana.includes(d.id) ? <CheckSquare className="w-3 h-3" /> : <Square className="w-3 h-3" />} {d.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
 
-                <div className="pt-2">
-                  <button 
-                    type="submit" 
-                    className="w-full py-3 bg-[#8ECADF] text-[#2F3437] rounded-xl text-sm font-bold hover:brightness-95 transition-all"
-                  >
-                    Avançar para Resumo
+                <div className="grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Horário Início</label>
+                    <input required type="time" value={formData.horario_inicio} onChange={(e) => setFormData({...formData, horario_inicio: e.target.value})} className="w-full px-3 py-2.5 bg-gray-50 border rounded-xl" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5">Horário Fim</label>
+                    <input required type="time" value={formData.horario_fim} onChange={(e) => setFormData({...formData, horario_fim: e.target.value})} className="w-full px-3 py-2.5 bg-gray-50 border rounded-xl" />
+                  </div>
+                </div>
+
+                <button type="submit" className="w-full py-3 bg-[#8ECADF] text-[#2F3437] rounded-xl font-bold">Avançar</button>
+              </form>
+            )}
+
+            {/* STEP 2 */}
+            {step === 2 && (
+              <form onSubmit={handleNextStep2} className="p-6 overflow-y-auto space-y-6">
+                {error && <div className="p-3 bg-red-50 text-red-700 text-sm font-medium rounded-xl flex gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+
+                <div className="relative">
+                  <label className="block text-xs font-bold text-[#6B7280] uppercase mb-1.5 flex justify-between">
+                    <span>Selecionar Profissional</span>
+                  </label>
+                  <input type="text" placeholder="Buscar nome..." value={busca} onChange={e => { setBusca(e.target.value); setFormData({...formData, profissional_id: ""}); }} className="w-full px-3 py-3 bg-gray-50 border rounded-xl" />
+                  
+                  {(!formData.profissional_id && busca.length > 0) && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      {profsFiltradosParaDropdown.map(p => (
+                        <div key={p.id} className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-0" onClick={() => { setFormData({...formData, profissional_id: p.id}); setBusca(p.nome_completo); }}>
+                          <p className="font-bold text-sm">{p.nome_completo}</p>
+                          <p className="text-[10px] text-gray-500">{p.cidade} • {p.categoria_profissional}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {calcResult && (
+                  <div className="bg-[#FAFAF7] p-4 rounded-xl border border-gray-100 space-y-4">
+                    <p className="text-xs font-bold text-[#2F3437] uppercase text-center bg-gray-200/50 py-1 rounded">Valores (Por Plantão/Dia)</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Repasse (R$)</label>
+                        <input required type="number" step="0.01" value={formData.valor_profissional} onChange={e => { setFormData({...formData, valor_profissional: e.target.value, houve_ajuste_manual: true}); }} className="w-full px-2 py-2 border rounded-lg text-sm text-green-700 font-bold" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Taxa Zelare (R$)</label>
+                        <input required type="number" step="0.01" value={formData.taxa_zelare} onChange={e => { setFormData({...formData, taxa_zelare: e.target.value, houve_ajuste_manual: true}); }} className="w-full px-2 py-2 border rounded-lg text-sm text-gray-700 font-bold" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Total a Cobrar (R$)</label>
+                      <input required type="number" step="0.01" value={formData.total_familia} onChange={e => { setFormData({...formData, total_familia: e.target.value, houve_ajuste_manual: true}); }} className="w-full px-2 py-3 border border-[#8ECADF] bg-white rounded-lg text-lg text-[#2F3437] font-black" />
+                    </div>
+                    {formData.houve_ajuste_manual && (
+                      <input type="text" placeholder="Motivo do ajuste manual..." value={formData.motivo_ajuste_manual} onChange={e => setFormData({...formData, motivo_ajuste_manual: e.target.value})} className="w-full p-2 border border-orange-200 rounded-lg text-xs" />
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold">Voltar</button>
+                  <button type="submit" disabled={isSubmitting} className="flex-[2] py-3 bg-[#8ECADF] text-[#2F3437] rounded-xl font-bold">
+                    {isSubmitting ? "Carregando..." : (tipoAgendamento === "pacote" ? "Verificar Conflitos" : "Resumo Final")}
                   </button>
                 </div>
               </form>
             )}
 
-            {step === 2 && (
+            {/* STEP 3 (Apenas Pacotes) */}
+            {step === 3 && tipoAgendamento === "pacote" && previewResult && (
               <div className="p-6 overflow-y-auto space-y-6">
-                {error && <div className="p-3 bg-red-50 text-red-700 text-sm font-medium rounded-xl flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>}
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-center">
+                  <p className="text-3xl font-black text-[#2F3437]">{previewResult.disponiveis.length}</p>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-1">Datas Livres Encontradas</p>
+                </div>
 
-                <div className="space-y-4 bg-[#FAFAF7] p-5 rounded-2xl border border-gray-100">
-                  <div>
-                    <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Profissional</p>
-                    <p className="font-bold text-[#2F3437]">{profissionais.find(p => p.id === formData.profissional_id)?.nome_completo}</p>
+                {previewResult.conflitos.length > 0 && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-xs font-bold text-red-800 flex items-center gap-1 mb-2"><AlertCircle className="w-4 h-4"/> Atenção: {previewResult.conflitos.length} datas com conflito de agenda.</p>
+                    <p className="text-[10px] text-red-700">O sistema criará apenas os {previewResult.disponiveis.length} plantões disponíveis e pulará automaticamente as seguintes datas ocupadas:</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {previewResult.conflitos.map((c: any, i: number) => (
+                        <span key={i} className="text-[10px] bg-red-100 text-red-800 px-2 py-0.5 rounded font-bold">{c.data_plantao_str}</span>
+                      ))}
+                    </div>
                   </div>
+                )}
+
+                <div className="bg-[#FAFAF7] p-4 border border-gray-100 rounded-xl">
+                  <p className="text-[10px] font-bold text-gray-500 uppercase">Resumo Financeiro Consolidado do Pacote</p>
+                  <div className="flex justify-between items-center mt-3">
+                    <span className="text-xs font-bold text-gray-600">Total a Pagar (Família)</span>
+                    <span className="text-xl font-black text-[#8ECADF]">{formatBRL(previewResult.total_familia)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-[10px] font-bold text-gray-500">Repasse ({previewResult.disponiveis.length} dias)</span>
+                    <span className="text-xs font-bold text-green-700">{formatBRL(previewResult.valor_profissional_total)}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={() => setStep(2)} className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold">Voltar</button>
+                  <button onClick={handleCreatePacote} disabled={isSubmitting || previewResult.disponiveis.length === 0} className="flex-[2] py-3 bg-[#A8D5BA] text-[#2F3437] rounded-xl font-bold flex items-center justify-center gap-2">
+                    {isSubmitting ? "Gerando..." : "Criar Pacote em Lote"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4 (Apenas Único) */}
+            {step === 4 && tipoAgendamento === "unico" && (
+              <div className="p-6 overflow-y-auto space-y-6">
+                <div className="space-y-4 bg-[#FAFAF7] p-5 rounded-2xl border border-gray-100">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Início</p>
                       <p className="font-bold text-[#2F3437]">{formData.data_plantao.split('-').reverse().join('/')} às {formData.horario_inicio}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Fim (Duração)</p>
-                      <p className="font-bold text-[#2F3437]">{formData.horario_fim} ({duracaoCalc})</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200">
-                    <div>
-                      <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Repasse ao Prof.</p>
-                      <p className="font-bold text-green-700">R$ {parseFloat(formData.valor_profissional).toFixed(2)}</p>
-                    </div>
-                    <div>
                       <p className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Total Família</p>
-                      <p className="font-black text-[#8ECADF]">R$ {totalFamilia.toFixed(2)}</p>
+                      <p className="font-black text-[#8ECADF] text-xl">{formatBRL(parseFloat(formData.total_familia))}</p>
                     </div>
                   </div>
                 </div>
-
                 <div className="flex gap-3">
-                  <button 
-                    onClick={() => setStep(1)}
-                    disabled={isSubmitting}
-                    className="flex-1 py-3 bg-white text-[#6B7280] border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all"
-                  >
-                    Voltar
-                  </button>
-                  <button 
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="flex-[2] py-3 bg-[#A8D5BA] text-[#2F3437] rounded-xl text-sm font-bold hover:brightness-95 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? "Salvando..." : <><CheckCircle2 className="w-5 h-5" /> Criar Plantão</>}
+                  <button onClick={() => setStep(2)} disabled={isSubmitting} className="flex-1 py-3 bg-white border border-gray-200 rounded-xl text-sm font-bold hover:bg-gray-50">Voltar</button>
+                  <button onClick={handleCreateUnico} disabled={isSubmitting} className="flex-[2] py-3 bg-[#A8D5BA] text-[#2F3437] rounded-xl text-sm font-bold hover:brightness-95 flex justify-center gap-2">
+                    {isSubmitting ? "Salvando..." : <><CheckCircle2 className="w-5 h-5" /> Confirmar</>}
                   </button>
                 </div>
               </div>

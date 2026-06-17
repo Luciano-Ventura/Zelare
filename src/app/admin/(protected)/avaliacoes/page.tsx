@@ -9,7 +9,7 @@ export default async function AvaliacoesPage() {
 
   const { data: avaliacoes } = await supabaseAdmin
     .from("avaliacoes")
-    .select("*")
+    .select("*, familias_solicitacoes(nome_completo), profissionais_cadastros(nome_completo)")
     .order("created_at", { ascending: false });
 
   return (
@@ -28,8 +28,8 @@ export default async function AvaliacoesPage() {
               Avaliado por: <span className="text-blue-600">{av.quem_avaliou === 'familia' ? 'Família' : 'Profissional'}</span>
             </p>
             <div className="mb-4 space-y-1">
-              <p className="text-sm font-medium text-text-main">Família: {av.nome_familia || "N/A"}</p>
-              <p className="text-sm font-medium text-text-main">Profissional: {av.nome_profissional || "N/A"}</p>
+              <p className="text-sm font-medium text-text-main">Família: {av.familias_solicitacoes?.nome_completo || "N/A"}</p>
+              <p className="text-sm font-medium text-text-main">Profissional: {av.profissionais_cadastros?.nome_completo || "N/A"}</p>
             </div>
             
             <div className="bg-gray-50 rounded-xl p-4 text-sm text-text-secondary italic">

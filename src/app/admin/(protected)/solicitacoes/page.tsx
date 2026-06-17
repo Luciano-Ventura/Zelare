@@ -2,33 +2,50 @@ import { requireAdmin } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import Link from "next/link";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { Search } from "lucide-react";
+import { SearchInput } from "@/components/admin/SearchInput";
+import { PaginationControls } from "@/components/admin/PaginationControls";
+import { EmptyState } from "@/components/admin/EmptyState";
+import { SolicitacoesFilters } from "./SolicitacoesFilters";
+import { sortSolicitacoes } from "@/lib/sortPriority";
 
 export const revalidate = 0;
 
-export default async function SolicitacoesPage() {
+export default async function SolicitacoesPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   await requireAdmin();
+  const resolvedSearchParams = await searchParams;
 
-  const { data: solicitacoes } = await supabaseAdmin
+  const status = typeof resolvedSearchParams.status === "string" ? resolvedSearchParams.status : null;
+  const busca = typeof resolvedSearchParams.busca === "string" ? resolvedSearchParams.busca : null;
+  const urgencia = typeof resolvedSearchParams.urgencia === "string" ? resolvedSearchParams.urgencia : null;
+  
+  const page = typeof resolvedSearchParams.page === "string" ? parseInt(resolvedSearchParams.page, 10) : 1;
+  const pageSize = typeof resolvedSearchParams.pageSize === "string" ? parseInt(resolvedSearchParams.pageSize, 10) : 20;
+
+  let query = supabaseAdmin
     .from("familias_solicitacoes")
-    .select("id, nome_completo, cidade, bairro, tipo_profissional, data_desejada, e_urgente, status, created_at")
-    .order("created_at", { ascending: false });
+    .select("id, nome_completo, cidade, bairro, tipo_profissional, data_desejada, e_urgente, status, created_at", { count: 'exact' });
+
+  if (status) query = query.eq("status", status);
+  if (busca) query = query.ilike("nome_completo", `%${busca}%`);
+  if (urgencia === "true") query = query.eq("e_urgente", true);
+  if (urgencia === "false") query = query.eq("e_urgente", false);
+
+  const { data: allFiltrados, count } = await query;
+  let solicitacoes = allFiltrados || [];
+
+  if (solicitacoes.length > 0) {
+    solicitacoes = sortSolicitacoes(solicitacoes);
+    solicitacoes = solicitacoes.slice((page - 1) * pageSize, page * pageSize);
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-text-main tracking-tight">Solicitações de Famílias</h1>
-        
-        {/* Futuro Filtro / Busca (Apenas visual no MVP server-side) */}
-        <div className="relative w-full sm:w-auto">
-          <input 
-            type="text" 
-            placeholder="Buscar solicitações..." 
-            className="w-full sm:w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-light"
-          />
-          <Search className="w-5 h-5 text-gray-400 absolute left-3 top-2.5" />
-        </div>
+        <SearchInput placeholder="Buscar família..." paramName="busca" />
       </div>
+
+      <SolicitacoesFilters />
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
@@ -81,7 +98,7 @@ export default async function SolicitacoesPage() {
                     <StatusBadge status={s.status} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link href={`/admin/solicitacoes/${s.id}`} className="text-blue-light hover:text-blue-dark">
+                    <Link href={`/admin/solicitacoes/${s.id}`} prefetch={false} className="text-blue-light hover:text-blue-dark">
                       Detalhes
                     </Link>
                   </td>
@@ -89,15 +106,15 @@ export default async function SolicitacoesPage() {
               ))}
               
               {(!solicitacoes || solicitacoes.length === 0) && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-text-secondary">
-                    Nenhuma solicitação encontrada.
-                  </td>
-                </tr>
+                <EmptyState message="Nenhuma solicitação encontrada com os filtros atuais." />
               )}
             </tbody>
           </table>
         </div>
+        
+        {count !== null && count > 0 && (
+          <PaginationControls totalItems={count} pageSize={pageSize} />
+        )}
       </div>
     </div>
   );

@@ -11,7 +11,8 @@ import {
   AlertTriangle,
   LogOut,
   Menu,
-  X
+  X,
+  Wallet
 } from "lucide-react";
 import { useState } from "react";
 import { logout } from "@/app/admin/auth-actions";
@@ -20,9 +21,11 @@ const navItems = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Solicitações", href: "/admin/solicitacoes", icon: Users },
   { name: "Profissionais", href: "/admin/profissionais", icon: UserSquare2 },
-  { name: "Plantões", href: "/admin/plantoes", icon: CalendarClock },
+  { name: "Relatórios", href: "/admin/relatorios", icon: CalendarClock },
   { name: "Avaliações", href: "/admin/avaliacoes", icon: Star },
   { name: "Ocorrências", href: "/admin/ocorrencias", icon: AlertTriangle },
+  { name: "Financeiro Famílias", href: "/admin/financeiro/familias", icon: Wallet },
+  { name: "Repasses", href: "/admin/financeiro/profissionais", icon: Wallet },
 ];
 
 export function Sidebar({ userName }: { userName: string }) {
@@ -58,6 +61,7 @@ export function Sidebar({ userName }: { userName: string }) {
                 <Link
                   key={item.name}
                   href={item.href}
+                  prefetch={false}
                   onClick={() => setIsOpen(false)}
                   className={`
                     flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors

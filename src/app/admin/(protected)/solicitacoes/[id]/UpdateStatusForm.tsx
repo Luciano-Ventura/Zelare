@@ -20,7 +20,10 @@ export function UpdateStatusForm({
 
   const handleUpdate = async () => {
     setIsPending(true);
-    await updateStatus(table, id, status);
+    const res = await updateStatus(table, id, status);
+    if (!res.success) {
+      alert("Erro ao atualizar: " + res.error);
+    }
     setIsPending(false);
   };
 

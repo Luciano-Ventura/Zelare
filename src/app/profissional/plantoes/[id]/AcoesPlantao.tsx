@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { registrarAcaoPlantao } from "../actions";
+import { CancelarPlantaoProfissionalButton } from "@/components/profissional/CancelarPlantaoProfissionalButton";
 
 type AcoesPlantaoProps = {
   id: string;
@@ -100,6 +101,11 @@ export default function AcoesPlantao({ id, statusProfissional, statusGlobal }: A
         >
           {loading ? "Processando..." : proximoPasso}
         </button>
+      )}
+
+      {/* Opção de cancelar (apenas se não tiver começado de fato) */}
+      {(statusProfissional === null || statusProfissional === "A caminho" || statusProfissional === "No local") && (
+        <CancelarPlantaoProfissionalButton plantaoId={id} />
       )}
     </div>
   );

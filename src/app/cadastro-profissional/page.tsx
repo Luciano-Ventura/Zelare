@@ -116,30 +116,117 @@ function CadastroProfissionalForm() {
                   {errors.whatsapp && <p className="mt-1 text-xs text-red-500">{errors.whatsapp.message}</p>}
                 </div>
               </div>
+            </div>
+
+            {/* Localização e raio de atendimento */}
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-text-main border-b border-gray-100 pb-2">Localização e raio de atendimento</h2>
+              <p className="text-sm text-text-secondary">
+                Informe seu endereço base ou região de partida. Ele será usado apenas pela operação da Zelare para encontrar plantões próximos. Seu endereço completo não será exibido publicamente.
+              </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="cidade" className="block text-sm font-medium text-text-main mb-1">Cidade que reside</label>
+                  <label htmlFor="cep_base" className="block text-sm font-medium text-text-main mb-1">CEP</label>
                   <input
-                    id="cidade"
+                    id="cep_base"
                     type="text"
-                    {...register("cidade")}
+                    {...register("cep_base")}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
-                    placeholder="Ex: Palhoça"
+                    placeholder="Ex: 88000-000"
                   />
-                  {errors.cidade && <p className="mt-1 text-xs text-red-500">{errors.cidade.message}</p>}
+                  {errors.cep_base && <p className="mt-1 text-xs text-red-500">{errors.cep_base.message}</p>}
                 </div>
                 <div>
-                  <label htmlFor="bairro" className="block text-sm font-medium text-text-main mb-1">Bairro que reside</label>
+                  <label htmlFor="endereco_base" className="block text-sm font-medium text-text-main mb-1">Endereço base (Rua/Avenida)</label>
+                  <input
+                    id="endereco_base"
+                    type="text"
+                    {...register("endereco_base")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                    placeholder="Ex: Rua das Flores"
+                  />
+                  {errors.endereco_base && <p className="mt-1 text-xs text-red-500">{errors.endereco_base.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="numero_base" className="block text-sm font-medium text-text-main mb-1">Número</label>
+                  <input
+                    id="numero_base"
+                    type="text"
+                    {...register("numero_base")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                    placeholder="Ex: 123"
+                  />
+                  {errors.numero_base && <p className="mt-1 text-xs text-red-500">{errors.numero_base.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="complemento_base" className="block text-sm font-medium text-text-main mb-1">Complemento (Opcional)</label>
+                  <input
+                    id="complemento_base"
+                    type="text"
+                    {...register("complemento_base")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                    placeholder="Ex: Apto 101, Bloco B"
+                  />
+                  {errors.complemento_base && <p className="mt-1 text-xs text-red-500">{errors.complemento_base.message}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="bairro" className="block text-sm font-medium text-text-main mb-1">Bairro</label>
                   <input
                     id="bairro"
                     type="text"
                     {...register("bairro")}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
-                    placeholder="Ex: Pedra Branca"
+                    placeholder="Ex: Centro"
                   />
                   {errors.bairro && <p className="mt-1 text-xs text-red-500">{errors.bairro.message}</p>}
                 </div>
+                <div>
+                  <label htmlFor="cidade" className="block text-sm font-medium text-text-main mb-1">Cidade</label>
+                  <input
+                    id="cidade"
+                    type="text"
+                    {...register("cidade")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                    placeholder="Ex: Florianópolis"
+                  />
+                  {errors.cidade && <p className="mt-1 text-xs text-red-500">{errors.cidade.message}</p>}
+                </div>
+                <div>
+                  <label htmlFor="estado" className="block text-sm font-medium text-text-main mb-1">Estado (UF)</label>
+                  <input
+                    id="estado"
+                    type="text"
+                    maxLength={2}
+                    {...register("estado")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all uppercase"
+                    placeholder="Ex: SC"
+                  />
+                  {errors.estado && <p className="mt-1 text-xs text-red-500">{errors.estado.message}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="raio_atendimento_km" className="block text-sm font-medium text-text-main mb-1">Raio de atendimento</label>
+                <select
+                  id="raio_atendimento_km"
+                  {...register("raio_atendimento_km", { valueAsNumber: true })}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all bg-white"
+                >
+                  <option value={5}>Até 5 km</option>
+                  <option value={10}>Até 10 km (Recomendado)</option>
+                  <option value={15}>Até 15 km</option>
+                  <option value={20}>Até 20 km</option>
+                  <option value={30}>Até 30 km</option>
+                  <option value={50}>Até 50 km</option>
+                </select>
+                {errors.raio_atendimento_km && <p className="mt-1 text-xs text-red-500">{errors.raio_atendimento_km.message}</p>}
               </div>
             </div>
 
@@ -245,20 +332,53 @@ function CadastroProfissionalForm() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="valor_medio" className="block text-sm font-medium text-text-main mb-1">Valor médio cobrado (R$)</label>
-                  <input
-                    id="valor_medio"
-                    type="text"
-                    {...register("valor_medio", {
-                      onChange: (e) => {
-                        e.target.value = maskCurrency(e.target.value);
-                      }
-                    })}
-                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
-                    placeholder="Ex: R$ 150,00 por plantão"
-                  />
+              <div className="space-y-4 pt-4 border-t border-gray-100 mt-4">
+                <h3 className="text-lg font-semibold text-text-main">Sua Precificação (Mínimos)</h3>
+                <p className="text-sm text-text-secondary">
+                  Estes valores serão usados pela nossa plataforma internamente para garantir que você não receba convites com valores abaixo do seu mínimo desejado. Eles não ficam públicos para as famílias.
+                </p>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="valor_minimo_4h" className="block text-xs font-medium text-text-main mb-1">Mínimo para 4h (R$)</label>
+                    <input id="valor_minimo_4h" type="number" step="0.01" {...register("valor_minimo_4h", { valueAsNumber: true })} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-light outline-none" placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label htmlFor="valor_minimo_6h" className="block text-xs font-medium text-text-main mb-1">Mínimo para 6h (R$)</label>
+                    <input id="valor_minimo_6h" type="number" step="0.01" {...register("valor_minimo_6h", { valueAsNumber: true })} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-light outline-none" placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label htmlFor="valor_minimo_8h" className="block text-xs font-medium text-text-main mb-1">Mínimo para 8h (R$)</label>
+                    <input id="valor_minimo_8h" type="number" step="0.01" {...register("valor_minimo_8h", { valueAsNumber: true })} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-light outline-none" placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label htmlFor="valor_minimo_12h" className="block text-xs font-medium text-text-main mb-1">Mínimo para 12h (R$)</label>
+                    <input id="valor_minimo_12h" type="number" step="0.01" {...register("valor_minimo_12h", { valueAsNumber: true })} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-light outline-none" placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label htmlFor="valor_minimo_24h" className="block text-xs font-medium text-text-main mb-1">Mínimo para 24h (R$)</label>
+                    <input id="valor_minimo_24h" type="number" step="0.01" {...register("valor_minimo_24h", { valueAsNumber: true })} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-light outline-none" placeholder="0.00" />
+                  </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="adicional_noturno" className="block text-xs font-medium text-text-main mb-1">Adicional Noturno Fixo (R$)</label>
+                    <input id="adicional_noturno" type="number" step="0.01" {...register("adicional_noturno", { valueAsNumber: true })} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-light outline-none" placeholder="0.00" />
+                  </div>
+                  <div>
+                    <label htmlFor="adicional_urgencia" className="block text-xs font-medium text-text-main mb-1">Adicional de Urgência (R$)</label>
+                    <input id="adicional_urgencia" type="number" step="0.01" {...register("adicional_urgencia", { valueAsNumber: true })} className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-blue-light outline-none" placeholder="0.00" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <input id="aceita_negociacao" type="checkbox" {...register("aceita_negociacao")} className="h-5 w-5 rounded border-gray-300 text-blue-light focus:ring-blue-light" />
+                  <label htmlFor="aceita_negociacao" className="text-sm font-medium text-text-main">
+                    Aceito negociar esses valores em caso de plantões recorrentes ou ofertas da família
+                  </label>
+                </div>
+              </div>
                 <div className="flex items-center h-full pt-6">
                   <div className="flex items-center gap-3">
                     <input
@@ -271,6 +391,34 @@ function CadastroProfissionalForm() {
                       Tenho referências de trabalhos anteriores
                     </label>
                   </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="pix_tipo" className="block text-sm font-medium text-text-main mb-1">Tipo de Chave Pix (Opcional)</label>
+                  <select
+                    id="pix_tipo"
+                    {...register("pix_tipo")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all bg-white"
+                  >
+                    <option value="">Selecione...</option>
+                    <option value="CPF/CNPJ">CPF/CNPJ</option>
+                    <option value="Celular">Celular</option>
+                    <option value="E-mail">E-mail</option>
+                    <option value="Chave Aleatória">Chave Aleatória</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="pix_chave" className="block text-sm font-medium text-text-main mb-1">Chave Pix para repasses (Opcional)</label>
+                  <input
+                    id="pix_chave"
+                    type="text"
+                    {...register("pix_chave")}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
+                    placeholder="Ex: seu-email@email.com"
+                  />
+                  <p className="text-[10px] text-text-secondary mt-1">Usada para repassar seus pagamentos. Famílias não terão acesso.</p>
                 </div>
               </div>
 

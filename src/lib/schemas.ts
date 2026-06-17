@@ -6,16 +6,23 @@ export const familiaSchema = z.object({
     const digits = v.replace(/\D/g, "");
     return digits.length === 10 || digits.length === 11;
   }, "O WhatsApp deve ter 10 ou 11 dígitos. Ex: (48) 99999-9999"),
+  cep: z.string().min(8, "CEP inválido."),
+  endereco: z.string().min(2, "Endereço é obrigatório."),
+  numero: z.string().min(1, "Número é obrigatório."),
+  complemento: z.string().optional(),
   cidade: z.string().min(2, "A cidade é obrigatória."),
+  estado: z.string().length(2, "Informe a sigla do Estado (Ex: SP)."),
   bairro: z.string().min(2, "O bairro é obrigatório."),
+  ponto_referencia: z.string().optional(),
   para_quem: z.string().min(2, "Informe para quem é o cuidado."),
   tipo_profissional: z.string().min(2, "Informe o tipo de profissional desejado."),
   data_desejada: z.string().min(2, "Informe a data desejada."),
-  horario_desejado: z.string().min(2, "Informe o horário desejado."),
+  horario_desejado: z.string().min(2, "Informe o horário de início."),
+  horario_fim: z.string().min(2, "Informe o horário de término."),
   duracao_plantao: z.string().min(2, "Informe a duração do plantão."),
   e_urgente: z.boolean().optional(),
   atividades_necessarias: z.string().optional(),
-  valor_sugerido: z.string().optional(),
+  preferencia_atendimento: z.string().optional(),
   observacoes: z.string().optional(),
   
   // Consentimentos
@@ -39,8 +46,14 @@ export const profissionalSchema = z.object({
     const digits = v.replace(/\D/g, "");
     return digits.length === 10 || digits.length === 11;
   }, "O WhatsApp deve ter 10 ou 11 dígitos. Ex: (48) 99999-9999"),
+  cep_base: z.string().min(8, "CEP inválido."),
+  endereco_base: z.string().min(2, "Endereço é obrigatório."),
+  numero_base: z.string().min(1, "Número é obrigatório."),
+  complemento_base: z.string().optional(),
   cidade: z.string().min(2, "A cidade é obrigatória."),
+  estado: z.string().length(2, "Informe a sigla do Estado (Ex: SP)."),
   bairro: z.string().min(2, "O bairro é obrigatório."),
+  raio_atendimento_km: z.number().int().min(5).max(50).default(10),
   categoria_profissional: z.string().min(2, "Informe sua categoria."),
   tipos_atendimento: z.string().min(2, "Informe os tipos de atendimento que aceita."),
   tempo_experiencia: z.string().min(1, "Informe o tempo de experiência."),
@@ -49,8 +62,18 @@ export const profissionalSchema = z.object({
   disponibilidade: z.string().min(2, "Informe sua disponibilidade."),
   regioes_atende: z.string().min(2, "Informe as regiões que atende."),
   valor_medio: z.string().optional(),
+  valor_minimo_4h: z.number().optional(),
+  valor_minimo_6h: z.number().optional(),
+  valor_minimo_8h: z.number().optional(),
+  valor_minimo_12h: z.number().optional(),
+  valor_minimo_24h: z.number().optional(),
+  adicional_noturno: z.number().optional(),
+  adicional_urgencia: z.number().optional(),
+  aceita_negociacao: z.boolean().default(true),
   possui_referencias: z.boolean().optional(),
   observacoes: z.string().optional(),
+  pix_chave: z.string().optional(),
+  pix_tipo: z.string().optional(),
 
   // Consentimentos
   contact_accepted: z.literal(true, {
