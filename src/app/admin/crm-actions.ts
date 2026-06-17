@@ -7,6 +7,16 @@ import { revalidatePath } from "next/cache";
 export async function updateStatus(table: "familias_solicitacoes" | "profissionais_cadastros" | "plantoes" | "ocorrencias", id: string, newStatus: string) {
   await requireAdmin();
 
+  if (table === "profissionais_cadastros" && (newStatus === "Validado" || newStatus === "Ativo")) {
+    const { data: prof } = await supabaseAdmin.from("profissionais_cadastros").select("checklist_validacao").eq("id", id).single();
+    const checklist = prof?.checklist_validacao || {};
+    const itemsRequired = ["identidade", "residencia", "certificado", "entrevista", "referencias"];
+    const allChecked = itemsRequired.every(i => checklist[i]);
+    if (!allChecked) {
+      return { success: false, error: "O checklist de validação não está completo. Conclua os itens pendentes antes de aprovar." };
+    }
+  }
+
   const { error } = await supabaseAdmin
     .from(table)
     .update({ status: newStatus })

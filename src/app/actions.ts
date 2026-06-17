@@ -92,6 +92,8 @@ export async function submitProfissional(data: ProfissionalData) {
 
   const validData = parsed.data;
   const now = new Date().toISOString();
+  
+  const acessoToken = Math.random().toString(36).substring(2, 8).toUpperCase();
 
   const enderecoCompletoBusca = `${validData.endereco_base}, ${validData.numero_base}, ${validData.bairro}, ${validData.cidade}, ${validData.estado}, ${validData.cep_base}, Brasil`;
   const geo = await geocodeAddress(enderecoCompletoBusca);
@@ -132,6 +134,7 @@ export async function submitProfissional(data: ProfissionalData) {
     privacy_accepted_at: now,
     contact_accepted_at: now,
     veracity_accepted_at: now,
+    acesso_token: acessoToken,
     
     // Tracking
     source: validData.source || null,

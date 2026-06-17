@@ -13,6 +13,8 @@ import { DeleteSolicitacaoButton } from "@/components/admin/DeleteSolicitacaoBut
 import { DeletePlantaoButton } from "@/components/admin/DeletePlantaoButton";
 import { ConfirmarPagamentoButton } from "@/components/admin/ConfirmarPagamentoButton";
 import { ConvidarProfissionalButton } from "@/components/admin/ConvidarProfissionalButton";
+import { FinanceiroSolicitacaoCard } from "@/components/admin/FinanceiroSolicitacaoCard";
+import { AddOcorrenciaAdminModal } from "@/components/admin/AddOcorrenciaAdminModal";
 import { Copy, MapPin } from "lucide-react";
 import { calcularDistanciaKm } from "@/lib/geo";
 
@@ -76,6 +78,29 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
     .eq("solicitacao_id", resolvedParams.id)
     .is("pacote_id", null)
     .order("created_at", { ascending: false });
+
+  // Buscar pagamentos desta solicitação
+  const { data: pagamentos } = await supabaseAdmin
+    .from("pagamentos")
+    .select("*")
+    .eq("solicitacao_id", resolvedParams.id);
+
+  // Buscar repasses dos plantões desta solicitação
+  const plantaoIds = [...(pacotesDaSolicitacao || []).map(p => p.id), ...(plantoesDaSolicitacao || []).map(p => p.id)];
+  let repasses: any[] = [];
+  if (plantaoIds.length > 0) {
+    const { data: r } = await supabaseAdmin
+      .from("repasses_profissionais")
+      .select("*")
+      .in("plantao_id", plantaoIds);
+    if (r) repasses = r;
+  }
+
+  // Buscar ocorrencias da solicitacao
+  const { data: ocorrencias } = await supabaseAdmin
+    .from("ocorrencias")
+    .select("*")
+    .eq("solicitacao_id", resolvedParams.id);
 
   const zapLink = `https://wa.me/55${solic.whatsapp}?text=${encodeURIComponent("Olá, tudo bem? Aqui é da Zelare. Recebemos sua solicitação de cuidado e vamos confirmar algumas informações.")}`;
 
@@ -181,13 +206,11 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
     .slice(0, 10);
   }
 
-  const mapIframeUrl = solic.latitude && solic.longitude 
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${solic.longitude!-0.01},${solic.latitude!-0.01},${solic.longitude!+0.01},${solic.latitude!+0.01}&layer=mapnik&marker=${solic.latitude},${solic.longitude}` 
-    : null;
-  
-  const googleMapsUrl = solic.latitude && solic.longitude
-    ? `https://www.google.com/maps/search/?api=1&query=${solic.latitude},${solic.longitude}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(solic.endereco_completo || solic.cidade)}`;
+  const addressQuery = encodeURIComponent(`${solic.cep || ''} ${solic.endereco_completo || ''} ${solic.numero || ''} ${solic.cidade || ''}`.replace(/\s+/g, ' ').trim());
+  const geoQuery = solic.latitude && solic.longitude ? `${solic.latitude},${solic.longitude}` : addressQuery;
+
+  const mapIframeUrl = geoQuery ? `https://maps.google.com/maps?q=${geoQuery}&t=&z=14&ie=UTF8&iwloc=&output=embed` : null;
+  const googleMapsUrl = geoQuery ? `https://www.google.com/maps/search/?api=1&query=${geoQuery}` : null;
 
   return (
     <div className="space-y-6">
@@ -319,10 +342,12 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
                   <MapPin className="w-4 h-4" /> Mapa da Solicitação
                 </p>
                 {!solic.latitude || !solic.longitude ? (
-                  <div className="p-4 bg-orange-50 text-orange-800 text-sm rounded-xl border border-orange-100">
-                    Esta solicitação ainda não possui localização precisa (latitude/longitude pendentes). Verifique o endereço antes de buscar profissionais por proximidade.
+                  <div className="p-4 bg-orange-50 text-orange-800 text-sm rounded-xl border border-orange-100 mb-4">
+                    Esta solicitação ainda não possui latitude/longitude precisos. O mapa abaixo utiliza o endereço base.
                   </div>
-                ) : (
+                ) : null}
+                
+                {mapIframeUrl ? (
                   <div className="space-y-3">
                     <div className="w-full h-64 rounded-xl overflow-hidden border border-gray-200">
                       <iframe 
@@ -336,11 +361,11 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
                         className="w-full h-full"
                       />
                     </div>
-                    <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                    <a href={googleMapsUrl!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium">
                       <MapPin className="w-4 h-4" /> Abrir no Google Maps
                     </a>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
@@ -361,7 +386,7 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
                 {profsCompativeisGeo.map(p => {
                   const convite = oportunidades?.find(o => o.profissional_id === p.id);
                   return (
-                    <div key={p.id} className="p-4 border border-gray-100 rounded-xl flex flex-col justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div key={p.id} data-testid="card-profissional-compativel" className="p-4 border border-gray-100 rounded-xl flex flex-col justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
                       <div className="mb-3">
                         <Link href={`/admin/profissionais/${p.id}`} prefetch={false} className="text-sm font-bold text-text-main hover:text-[#8ECADF]">{p.nome_completo}</Link>
                         <p className="text-[10px] uppercase font-bold text-text-secondary mt-1">{p.categoria_profissional}</p>
@@ -487,6 +512,45 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
                   ))}
                 </div>
               </div>
+            )}
+          </div>
+
+          <FinanceiroSolicitacaoCard 
+            pagamentos={pagamentos || []} 
+            repasses={repasses || []} 
+            solicitacaoId={solic.id} 
+          />
+
+          <div className="bg-red-50 rounded-2xl shadow-sm border border-red-100 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-red-800 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5" /> Ocorrências Relacionadas ({ocorrencias?.length || 0})
+              </h3>
+              <AddOcorrenciaAdminModal solicitacaoId={solic.id} />
+            </div>
+            
+            {ocorrencias && ocorrencias.length > 0 ? (
+              <div className="space-y-3">
+                {ocorrencias.map((oco: any) => (
+                  <div key={oco.id} className="bg-white border border-red-200 p-4 rounded-xl shadow-sm">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="text-sm font-bold text-gray-800">{oco.tipo_ocorrencia}</p>
+                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                        oco.status === "Aberta" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                      }`}>
+                        {oco.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">{oco.descricao}</p>
+                    <div className="flex gap-4 text-xs text-gray-500">
+                      <span>Aberta por: <strong className="text-gray-700">{oco.aberta_por || oco.responsavel || "Sistema"}</strong></span>
+                      <span>Gravidade: <strong className="text-gray-700">{oco.gravidade}</strong></span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-red-600">Nenhuma ocorrência registrada para esta solicitação.</p>
             )}
           </div>
 

@@ -4,17 +4,19 @@ import Link from "next/link";
 import { ArrowRight, Clock, Users, UserSquare2, CalendarClock, AlertTriangle, UserCheck, SearchX, Wallet, DollarSign } from "lucide-react";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 
+import { PreLaunchChecklist } from "@/components/admin/PreLaunchChecklist";
+
 export const revalidate = 0; // Disable cache for dashboard
 
 export default async function AdminDashboard() {
   await requireAdmin();
 
+  // ... (keeping existing variables and queries)
   const hojeStr = new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
   const dataAmanha = new Date();
   dataAmanha.setDate(dataAmanha.getDate() + 1);
   const amanhaStr = dataAmanha.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
 
-  // Get last 7 days strings
   const last7Days = Array.from({length: 7}, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
@@ -32,7 +34,14 @@ export default async function AdminDashboard() {
     { data: plantoesAmanha },
     { data: solics7Days },
     { count: countPagamentosPendentes },
-    { count: countRepassesPendentes }
+    { count: countRepassesPendentes },
+    { data: checklistData },
+    { data: configuracaoData },
+    { count: countSLA },
+    { data: pagamentosTodos },
+    { count: countProfAprovados },
+    { count: countProfTotal },
+    { count: countPlantoesConcluidosMes }
   ] = await Promise.all([
     supabaseAdmin.from("familias_solicitacoes").select("*", { count: "exact", head: true }).eq("status", "Novo pedido"),
     supabaseAdmin.from("familias_solicitacoes").select("*", { count: "exact", head: true }).eq("e_urgente", true).in("status", ["Novo pedido", "Em análise", "Procurando profissional", "Aguardando informações"]),
@@ -44,20 +53,30 @@ export default async function AdminDashboard() {
     supabaseAdmin.from("plantoes").select("id, familia_nome, profissional_nome, data_plantao, horario_inicio, duracao, status").eq("data_plantao", amanhaStr).in("status", ["Confirmado", "Em andamento"]).order("horario_inicio", { ascending: true }),
     supabaseAdmin.from("familias_solicitacoes").select("created_at").gte("created_at", `${last7Days[0]}T00:00:00Z`),
     supabaseAdmin.from("pagamentos").select("*", { count: "exact", head: true }).eq("status_pagamento", "Aguardando pagamento"),
-    supabaseAdmin.from("repasses_profissionais").select("*", { count: "exact", head: true }).eq("status_repasse", "Pronto para repasse")
+    supabaseAdmin.from("repasses_profissionais").select("*", { count: "exact", head: true }).eq("status_repasse", "Pronto para repasse"),
+    supabaseAdmin.from("checklist_operacao").select("*").order("created_at", { ascending: true }),
+    supabaseAdmin.from("configuracoes_sistema").select("*").single(),
+    supabaseAdmin.from("familias_solicitacoes").select("*", { count: "exact", head: true }).eq("status", "Novo pedido").lte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+    supabaseAdmin.from("pagamentos").select("total_familia, taxa_zelare, status_pagamento"),
+    supabaseAdmin.from("profissionais_cadastros").select("*", { count: "exact", head: true }).eq("status", "Aprovado"),
+    supabaseAdmin.from("profissionais_cadastros").select("*", { count: "exact", head: true }),
+    supabaseAdmin.from("plantoes").select("*", { count: "exact", head: true }).eq("status", "Concluído").gte("data_plantao", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
   ]);
 
-  // Chart data calculation
+  const checklistItems = checklistData || [];
+  const modoPilotoAtivo = configuracaoData?.piloto_ativo === true;
+
   const chartData = last7Days.map(date => {
     const count = solics7Days?.filter(s => s.created_at.startsWith(date)).length || 0;
     const dateObj = new Date(date + "T12:00:00Z");
     const label = dateObj.toLocaleDateString("pt-BR", { weekday: 'short' }).replace('.', '');
     return { date, label, count };
   });
-  const maxCount = Math.max(...chartData.map(d => d.count), 1); // Avoid div by zero
+  const maxCount = Math.max(...chartData.map(d => d.count), 1); 
 
   const filaAcao = [
     { name: "Novos Pedidos", value: countNovosPedidos || 0, icon: Users, href: "/admin/solicitacoes?status=Novo pedido", color: "text-[#2F3437]", bg: "bg-[#8ECADF]", border: "border-[#8ECADF]/30" },
+    { name: "SLA > 24h", value: countSLA || 0, icon: AlertTriangle, href: "/admin/solicitacoes?status=Novo pedido", color: "text-red-700", bg: "bg-red-200", border: "border-red-300" },
     { name: "Pedidos Urgentes", value: countUrgentes || 0, icon: Clock, href: "/admin/solicitacoes?urgencia=true", color: "text-red-700", bg: "bg-red-100", border: "border-red-200" },
     { name: "Sem Profissional", value: countSemProfissional || 0, icon: SearchX, href: "/admin/solicitacoes?status=Sem profissional disponível", color: "text-orange-700", bg: "bg-orange-100", border: "border-orange-200" },
     { name: "Profs p/ Validar", value: countProfAnalise || 0, icon: UserSquare2, href: "/admin/profissionais?status=validacao", color: "text-yellow-800", bg: "bg-yellow-100", border: "border-yellow-200" },
@@ -67,11 +86,53 @@ export default async function AdminDashboard() {
     { name: "Repasses Pendentes", value: countRepassesPendentes || 0, icon: DollarSign, href: "/admin/financeiro", color: "text-green-700", bg: "bg-green-100", border: "border-green-200" },
   ];
 
+  // Calculos KPIs
+  const receitaRealizada = pagamentosTodos?.filter(p => p.status_pagamento === "Pago").reduce((acc, curr) => acc + (curr.taxa_zelare || 0), 0) || 0;
+  const totalRecebido = pagamentosTodos?.filter(p => p.status_pagamento === "Pago").reduce((acc, curr) => acc + (curr.total_familia || 0), 0) || 0;
+  const receitaEstimada = pagamentosTodos?.filter(p => p.status_pagamento === "Aguardando pagamento").reduce((acc, curr) => acc + (curr.taxa_zelare || 0), 0) || 0;
+  const taxaConversao = countProfTotal ? Math.round(((countProfAprovados || 0) / countProfTotal) * 100) : 0;
+
   return (
     <div className="space-y-8 pb-10">
+
+
       <div>
         <h1 className="text-3xl font-extrabold text-[#2F3437] tracking-tight">Visão Operacional</h1>
         <p className="text-sm text-[#6B7280] mt-1">O que você precisa resolver hoje?</p>
+      </div>
+
+
+
+      {/* KPIs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col justify-center">
+          <p className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-1">Receita Zelare no mês</p>
+          <div className="flex items-end gap-2">
+            <span className="text-2xl font-black text-green-600">R$ {receitaRealizada.toFixed(2)}</span>
+            <span className="text-sm text-gray-400 mb-1">/ R$ {(receitaRealizada + receitaEstimada).toFixed(2)}</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col justify-center">
+          <p className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-1">Total Movimentado (Famílias)</p>
+          <div className="flex items-end gap-2">
+            <span className="text-2xl font-black text-blue-600">R$ {totalRecebido.toFixed(2)}</span>
+            <span className="text-sm text-gray-400 mb-1">recebidos</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col justify-center">
+          <p className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-1">Plantões Concluídos (Mês)</p>
+          <div className="flex items-end gap-2">
+            <span className="text-2xl font-black text-gray-700">{countPlantoesConcluidosMes || 0}</span>
+            <span className="text-sm text-gray-400 mb-1">plantões</span>
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col justify-center">
+          <p className="text-xs font-bold text-[#6B7280] uppercase tracking-wider mb-1">Conversão Profissionais</p>
+          <div className="flex items-end gap-2">
+            <span className="text-2xl font-black text-blue-600">{taxaConversao}%</span>
+            <span className="text-sm text-gray-400 mb-1">aprovados</span>
+          </div>
+        </div>
       </div>
 
       {/* Fila de Ação */}

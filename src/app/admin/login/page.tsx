@@ -47,6 +47,7 @@ export default function AdminLogin() {
               name="email"
               type="email"
               required
+              data-testid="admin-email"
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
               placeholder="seu@email.com"
             />
@@ -64,6 +65,7 @@ export default function AdminLogin() {
               name="password"
               type="password"
               required
+              data-testid="admin-password"
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
               placeholder="••••••••"
             />
@@ -71,6 +73,7 @@ export default function AdminLogin() {
 
           <button
             type="submit"
+            data-testid="admin-login-submit"
             disabled={isPending}
             className="w-full flex items-center justify-center rounded-xl bg-blue-light px-4 py-3 text-base font-semibold text-white shadow-lg shadow-blue-light/30 transition-all hover:bg-blue-light/90 disabled:opacity-70"
           >

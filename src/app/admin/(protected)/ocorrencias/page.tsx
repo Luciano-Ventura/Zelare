@@ -14,6 +14,7 @@ export default async function OcorrenciasPage({ searchParams }: { searchParams: 
   const gravidade = typeof resolvedSearchParams.gravidade === "string" ? resolvedSearchParams.gravidade : null;
   const status = typeof resolvedSearchParams.status === "string" ? resolvedSearchParams.status : null;
   const busca = typeof resolvedSearchParams.busca === "string" ? resolvedSearchParams.busca : null;
+  const periodo = typeof resolvedSearchParams.periodo === "string" ? resolvedSearchParams.periodo : null;
   
   const page = typeof resolvedSearchParams.page === "string" ? parseInt(resolvedSearchParams.page, 10) : 1;
   const pageSize = typeof resolvedSearchParams.pageSize === "string" ? parseInt(resolvedSearchParams.pageSize, 10) : 20;
@@ -27,6 +28,13 @@ export default async function OcorrenciasPage({ searchParams }: { searchParams: 
   if (gravidade) query = query.eq("gravidade", gravidade);
   if (status) query = query.eq("status", status);
   if (busca) query = query.ilike("descricao", `%${busca}%`); // Busca por descrição na ocorrência
+  if (periodo) {
+    const startOfDay = new Date(periodo);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(periodo);
+    endOfDay.setHours(23, 59, 59, 999);
+    query = query.gte("created_at", startOfDay.toISOString()).lte("created_at", endOfDay.toISOString());
+  }
 
   // 3. Executar a busca de todos para depois ordenar e paginar em memória (ou range se der)
   // Como temos prioridades complexas, buscamos filtrado e depois ordenamos e fatiamos

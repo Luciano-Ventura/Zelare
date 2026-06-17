@@ -1,8 +1,9 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { notFound } from "next/navigation";
-import { CheckCircle2, Clock, Calendar, MapPin, User as UserIcon, Phone } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, MapPin, User as UserIcon, Phone, Info } from "lucide-react";
 import FormAvaliacao from "./FormAvaliacao";
 import { CancelarSolicitacaoFamiliaButton } from "@/components/familia/CancelarSolicitacaoFamiliaButton";
+import { RelatarProblemaButton } from "@/components/familia/RelatarProblemaButton";
 
 export const revalidate = 0;
 
@@ -16,7 +17,25 @@ export default async function AcompanharPage({ params }: { params: Promise<{ cod
     .single();
 
   if (!sol) {
-    notFound();
+    return (
+      <div className="min-h-screen bg-[#FAFAF7] font-sans pb-32 flex flex-col items-center pt-20 px-6">
+        <header className="absolute top-0 left-0 w-full bg-white border-b border-gray-100 p-6 flex justify-center items-center shadow-sm">
+          <h1 className="font-black text-[#8ECADF] text-2xl tracking-tight">ZELARE</h1>
+        </header>
+        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-sm text-center border border-gray-100 mt-10">
+          <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Info className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-[#2F3437] mb-2">Código não encontrado</h2>
+          <p className="text-sm text-[#6B7280] mb-6">
+            Não encontramos uma solicitação com esse código. Verifique se digitou corretamente ou fale com a equipe da Zelare.
+          </p>
+          <a href="https://wa.me/5511999999999" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-full bg-blue-light text-white py-3 rounded-xl text-sm font-bold hover:bg-blue-light/90 transition-colors">
+            <Phone className="w-4 h-4 mr-2" /> Falar com a Zelare
+          </a>
+        </div>
+      </div>
+    );
   }
 
   // Pegar o plantão mais recente vinculado
@@ -60,7 +79,7 @@ export default async function AcompanharPage({ params }: { params: Promise<{ cod
             <MapPin className="w-4 h-4 mr-2 text-[#8ECADF]" /> {sol.cidade} - {sol.bairro}
           </div>
           <div className="flex items-center text-sm font-bold text-[#2F3437]">
-            <Calendar className="w-4 h-4 mr-2 text-[#8ECADF]" /> A partir de {sol.data_inicio} ({sol.duracao_plantao})
+            <Calendar className="w-4 h-4 mr-2 text-[#8ECADF]" /> A partir de {sol.data_desejada} ({sol.duracao_plantao})
           </div>
         </div>
 
@@ -218,6 +237,15 @@ export default async function AcompanharPage({ params }: { params: Promise<{ cod
           <div id="avaliacao" className="bg-white rounded-3xl p-6 shadow-sm border border-[#A8D5BA]">
             <FormAvaliacao plantaoId={plantao.id} solicitacaoId={sol.id} profissionalId={plantao.profissional_id} />
           </div>
+        )}
+
+        {/* Relatar Problema (Sempre disponível se não estiver cancelado) */}
+        {sol.status !== "Cancelado" && (
+          <RelatarProblemaButton 
+            codigo={resolvedParams.codigo} 
+            solicitacaoId={sol.id} 
+            plantaoId={plantao?.id} 
+          />
         )}
 
         {/* Cancelar (Apenas se não pago / inicial) */}

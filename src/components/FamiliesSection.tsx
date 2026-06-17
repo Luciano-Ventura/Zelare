@@ -78,7 +78,7 @@ export default function FamiliesSection() {
                       <span className="text-xs font-medium text-text-secondary">4.9</span>
                     </div>
                   </div>
-                  <p className="text-xs text-text-secondary">Técnico de Enfermagem • Florianópolis</p>
+                  <p className="text-xs text-text-secondary">Técnico de Enfermagem</p>
                 </div>
               </div>
 

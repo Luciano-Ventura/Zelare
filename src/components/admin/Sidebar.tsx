@@ -8,6 +8,7 @@ import {
   UserSquare2, 
   CalendarClock, 
   Star, 
+  MessageCircle,
   AlertTriangle,
   LogOut,
   Menu,
@@ -26,6 +27,7 @@ const navItems = [
   { name: "Ocorrências", href: "/admin/ocorrencias", icon: AlertTriangle },
   { name: "Financeiro Famílias", href: "/admin/financeiro/familias", icon: Wallet },
   { name: "Repasses", href: "/admin/financeiro/profissionais", icon: Wallet },
+  { name: "Mensagens Padrão", href: "/admin/mensagens", icon: MessageCircle },
 ];
 
 export function Sidebar({ userName }: { userName: string }) {
@@ -62,6 +64,7 @@ export function Sidebar({ userName }: { userName: string }) {
                   key={item.name}
                   href={item.href}
                   prefetch={false}
+                  data-testid={item.name === "Solicitações" ? "solicitacoes-lista" : item.name === "Profissionais" ? "profissionais-lista" : undefined}
                   onClick={() => setIsOpen(false)}
                   className={`
                     flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors

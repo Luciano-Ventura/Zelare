@@ -47,7 +47,7 @@ export function sortProfissionais(items: any[]) {
 export function sortOcorrencias(items: any[]) {
   const statusPriority: Record<string, number> = {
     'Aberta': 1,
-    'Em análise': 1,
+    'Em análise': 2,
     'Resolvida': 3,
     'Arquivada': 3,
     'Cancelada': 3,
@@ -55,22 +55,28 @@ export function sortOcorrencias(items: any[]) {
 
   const gravidadePriority: Record<string, number> = {
     'Crítica': 1,
-    'Alta': 1,
-    'Média': 2,
-    'Baixa': 3,
+    'Alta': 2,
+    'Média': 3,
+    'Baixa': 4,
   };
 
   return items.sort((a, b) => {
-    const sA = statusPriority[a.status] || 2;
-    const sB = statusPriority[b.status] || 2;
-    
-    if (sA !== sB) return sA - sB;
+    // 1. Fechadas sempre no final
+    const isClosedA = a.status === 'Resolvida' || a.status === 'Arquivada' || a.status === 'Cancelada';
+    const isClosedB = b.status === 'Resolvida' || b.status === 'Arquivada' || b.status === 'Cancelada';
+    if (isClosedA !== isClosedB) return isClosedA ? 1 : -1;
 
-    const gA = gravidadePriority[a.gravidade] || 2;
-    const gB = gravidadePriority[b.gravidade] || 2;
-
+    // 2. Gravidade (Crítica > Alta > Média > Baixa)
+    const gA = gravidadePriority[a.gravidade] || 4;
+    const gB = gravidadePriority[b.gravidade] || 4;
     if (gA !== gB) return gA - gB;
 
+    // 3. Status (Aberta > Em análise)
+    const sA = statusPriority[a.status] || 3;
+    const sB = statusPriority[b.status] || 3;
+    if (sA !== sB) return sA - sB;
+
+    // 4. Mais recentes primeiro
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 }

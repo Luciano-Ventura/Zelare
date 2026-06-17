@@ -53,7 +53,7 @@ export default async function ProfissionalDashboard() {
 
       {/* Resumo */}
       <div className="grid grid-cols-2 gap-4">
-        <Link href="/profissional/oportunidades" className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col items-center text-center hover:border-[#8ECADF] transition-colors">
+        <Link href="/profissional/oportunidades" data-testid="convites-lista" className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col items-center text-center hover:border-[#8ECADF] transition-colors">
           <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-500 mb-3 relative">
             <Bell className="w-6 h-6" />
             {oportunidades && oportunidades.length > 0 && (

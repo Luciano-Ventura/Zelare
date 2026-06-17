@@ -43,6 +43,7 @@ export function LoginForm() {
           type="tel" 
           name="whatsapp" 
           required 
+          data-testid="profissional-login-whatsapp"
           placeholder="Ex: 11999999999"
           className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-lg font-bold text-[#2F3437] focus:ring-4 focus:ring-[#8ECADF]/20 focus:border-[#8ECADF] outline-none transition-all placeholder:font-medium placeholder:text-gray-300"
         />
@@ -56,6 +57,7 @@ export function LoginForm() {
           type="text" 
           name="token" 
           required 
+          data-testid="profissional-login-token"
           placeholder="Digite o código enviado pela Zelare"
           className="w-full bg-white border border-gray-200 rounded-2xl px-5 py-4 text-lg font-bold text-[#2F3437] focus:ring-4 focus:ring-[#8ECADF]/20 focus:border-[#8ECADF] outline-none transition-all placeholder:font-medium placeholder:text-gray-300 uppercase"
         />
@@ -63,6 +65,7 @@ export function LoginForm() {
 
       <button 
         type="submit" 
+        data-testid="profissional-login-submit"
         disabled={loading}
         className="w-full bg-[#8ECADF] text-[#2F3437] py-4 rounded-2xl text-base font-black hover:brightness-95 transition-all shadow-md disabled:opacity-50 mt-8"
       >

@@ -52,7 +52,7 @@ export default async function OportunidadeDetailPage({ params }: { params: Promi
           <div>
             <h3 className="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider mb-1">Início</h3>
             <div className="flex items-center text-sm font-bold text-[#2F3437]">
-              <Calendar className="w-4 h-4 mr-1 text-[#8ECADF]" /> {sol.data_inicio}
+              <Calendar className="w-4 h-4 mr-1 text-[#8ECADF]" /> {sol.data_desejada}
             </div>
           </div>
           <div>

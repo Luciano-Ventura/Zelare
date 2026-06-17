@@ -75,3 +75,32 @@ export async function salvarAvaliacao(formData: FormData) {
     return { error: err.message };
   }
 }
+
+export async function relatarOcorrenciaFamilia(formData: FormData) {
+  try {
+    const plantaoId = formData.get("plantao_id") as string;
+    const solicitacaoId = formData.get("solicitacao_id") as string;
+    const descricao = formData.get("descricao") as string;
+    const codigo = formData.get("codigo") as string;
+
+    if (!descricao || (!plantaoId && !solicitacaoId)) {
+      throw new Error("Dados incompletos.");
+    }
+
+    const { error } = await supabaseAdmin.from("ocorrencias").insert({
+      plantao_id: plantaoId || null,
+      solicitacao_id: solicitacaoId || null,
+      tipo_ocorrencia: "Problema relatado pela família",
+      descricao: descricao,
+      gravidade: "Média", // Default
+      aberta_por: "Família (Portal de Acompanhamento)"
+    });
+
+    if (error) throw error;
+
+    revalidatePath(`/acompanhar/${codigo}`);
+    return { success: true };
+  } catch (err: any) {
+    return { error: err.message };
+  }
+}

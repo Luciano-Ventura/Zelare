@@ -55,9 +55,17 @@ export default function Footer() {
             <p className="text-xs text-text-secondary leading-relaxed mb-4">
               A Zelare está em fase inicial de validação. A disponibilidade de profissionais depende da região, horário, perfil solicitado e cadastros ativos. A Zelare não realiza atendimento médico de emergência.
             </p>
-            <Link href="/politica-de-privacidade" className="text-xs text-text-secondary hover:text-text-main transition-colors underline underline-offset-2">
-              Política de Privacidade
-            </Link>
+            <div className="flex flex-col gap-2">
+              <Link href="/termos-de-uso" className="text-xs text-text-secondary hover:text-text-main transition-colors underline underline-offset-2">
+                Termos de Uso
+              </Link>
+              <Link href="/politica-de-privacidade" className="text-xs text-text-secondary hover:text-text-main transition-colors underline underline-offset-2">
+                Política de Privacidade
+              </Link>
+              <Link href="/politica-de-cancelamento" className="text-xs text-text-secondary hover:text-text-main transition-colors underline underline-offset-2">
+                Política de Cancelamento
+              </Link>
+            </div>
           </div>
 
         </div>

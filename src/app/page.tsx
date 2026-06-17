@@ -6,6 +6,7 @@ import CareTypes from "@/components/CareTypes";
 import FamiliesSection from "@/components/FamiliesSection";
 import ProfessionalsSection from "@/components/ProfessionalsSection";
 import SafetySection from "@/components/SafetySection";
+import PricingSection from "@/components/PricingSection";
 import FAQ from "@/components/FAQ";
 import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
@@ -23,6 +24,7 @@ export default function Home() {
         <FamiliesSection />
         <ProfessionalsSection />
         <SafetySection />
+        <PricingSection />
         <FAQ />
         <FinalCTA />
       </main>

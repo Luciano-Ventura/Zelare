@@ -81,18 +81,18 @@ export const TRUST_CARDS = [
     icon: ShieldCheck,
   },
   {
-    title: "Foco regional",
-    description: "Atuação inicial em São José, Florianópolis, Palhoça, Biguaçu e região.",
+    title: "Atendimento em expansão",
+    description: "A Zelare está em expansão para conectar famílias a profissionais pelo Brasil, sujeito a disponibilidade na região.",
     icon: MapPin,
   },
 ];
 
 export const HOW_IT_WORKS_STEPS = [
-  { step: "1", title: "Você solicita o cuidado", description: "Informe região, data, horário, tipo de cuidado e observações importantes." },
-  { step: "2", title: "A Zelare analisa o pedido", description: "Nossa equipe entende a necessidade e verifica o perfil ideal para o atendimento." },
-  { step: "3", title: "Profissionais disponíveis respondem", description: "Profissionais cadastrados podem aceitar, recusar ou enviar uma contraproposta." },
-  { step: "4", title: "O plantão é combinado", description: "Nossa equipe seleciona o perfil ideal e você aprova antes de realizar o pagamento." },
-  { step: "5", title: "Você avalia o atendimento", description: "Após o plantão, coletamos a avaliação para melhorar a qualidade da rede." },
+  { step: "1", title: "Você solicita o cuidado", description: "Informe o tipo de atendimento, local, data, horário e principais necessidades da pessoa que receberá o cuidado." },
+  { step: "2", title: "A Zelare analisa sua solicitação", description: "Nossa equipe avalia a região, duração, tipo de cuidado, complexidade e disponibilidade de profissionais compatíveis." },
+  { step: "3", title: "Buscamos profissionais cadastrados e analisados", description: "A Zelare procura profissionais com perfil compatível, considerando região de atendimento, disponibilidade, experiência e agenda." },
+  { step: "4", title: "Você recebe o valor final do plantão", description: "O valor é informado pela Zelare com base nas características do atendimento e já considera a organização, triagem, acompanhamento e suporte da operação." },
+  { step: "5", title: "O plantão é confirmado após o pagamento", description: "Após a confirmação da família e o pagamento online, o plantão é confirmado e acompanhado pela Zelare." },
 ];
 
 export const CARE_TYPES = [
@@ -146,24 +146,24 @@ export const FAQS = [
     answer: "Não. A Zelare está em fase inicial de validação, com atendimento via landing page, formulários e WhatsApp. O objetivo é validar a demanda antes de construir uma plataforma completa."
   },
   {
-    question: "Como solicito um cuidado?",
-    answer: "Você preenche o formulário informando região, data, horário, duração e tipo de cuidado necessário. Depois, nossa equipe entra em contato pelo WhatsApp."
+    question: "A família pode escolher quanto quer pagar?",
+    answer: "Não. Para manter uma operação organizada e justa para famílias e profissionais, a Zelare calcula o valor do plantão com base na região, duração, horário, tipo de cuidado e disponibilidade dos profissionais. A família recebe o valor final antes de confirmar o atendimento."
   },
   {
-    question: "A Zelare garante profissional disponível?",
-    answer: "Não garantimos disponibilidade imediata. A confirmação depende da região, horário, tipo de cuidado e profissionais cadastrados."
+    question: "A Zelare cobra alguma taxa separada?",
+    answer: "A família recebe um valor final do plantão. Esse valor já considera a operação da Zelare, incluindo análise da solicitação, triagem, busca de profissional compatível, organização, confirmação e acompanhamento do atendimento."
   },
   {
-    question: "Quem define o valor do plantão?",
-    answer: "O valor pode ser sugerido pela família e alinhado com o profissional disponível. Em alguns casos, o profissional poderá enviar uma contraproposta."
+    question: "Quando o plantão é confirmado?",
+    answer: "O plantão é confirmado após a família aceitar o valor informado e realizar o pagamento online."
   },
   {
-    question: "A Zelare cobra alguma taxa?",
-    answer: "Sim. A Zelare poderá cobrar uma taxa de serviço sobre plantões fechados. Tudo será informado com clareza antes da confirmação."
+    question: "O que está incluído no valor do plantão?",
+    answer: "O valor inclui o atendimento combinado com o profissional e a operação da Zelare para organizar o plantão, analisar a solicitação, buscar profissionais compatíveis, acompanhar a confirmação e oferecer suporte durante o processo."
   },
   {
-    question: "Quais profissionais podem se cadastrar?",
-    answer: "Cuidadores, babás, técnicos de enfermagem, enfermeiros e profissionais com experiência em cuidado domiciliar."
+    question: "O valor pode mudar?",
+    answer: "O valor pode variar conforme região, horário, duração, complexidade, urgência, deslocamento e disponibilidade de profissionais. A família sempre será informada do valor final antes da confirmação."
   },
   {
     question: "A Zelare faz atendimento médico?",
@@ -171,6 +171,6 @@ export const FAQS = [
   },
   {
     question: "Quais regiões são atendidas?",
-    answer: "Inicialmente, a Zelare pretende atuar em Areias, São José, Florianópolis, Palhoça, Biguaçu e região."
+    answer: "A Zelare está em expansão pelo Brasil. A disponibilidade do atendimento depende da região, do tipo de cuidado e dos profissionais cadastrados no momento da solicitação."
   }
 ];

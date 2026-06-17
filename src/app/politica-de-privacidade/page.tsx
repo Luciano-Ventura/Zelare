@@ -1,74 +1,35 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "Política de Privacidade | Zelare",
-  description: "Política de privacidade e uso de dados da Zelare.",
-};
-
-export default function PrivacyPolicy() {
+export default function PoliticaDePrivacidadePage() {
   return (
-    <div className="min-h-screen bg-bg-main py-16 lg:py-24">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6">
-        <Link 
-          href="/" 
-          className="inline-flex items-center gap-2 text-sm text-text-secondary hover:text-text-main transition-colors mb-8"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar para o início
+    <div className="min-h-screen bg-gray-50 flex justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl w-full bg-white p-8 sm:p-12 rounded-2xl shadow-sm border border-gray-100">
+        <Link href="/" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500 mb-8 transition-colors">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Voltar para o início
         </Link>
-        
-        <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-sm ring-1 ring-sand-light/50">
-          <h1 className="text-3xl font-bold tracking-tight text-text-main mb-8">
-            Política de Privacidade
-          </h1>
+        <h1 className="text-3xl font-extrabold text-gray-900 mb-6">Política de Privacidade</h1>
+        <div className="prose prose-blue max-w-none text-gray-600 space-y-6">
+
           
-          <div className="space-y-6 text-text-secondary leading-relaxed">
-            <p>
-              A Zelare valoriza a sua privacidade e está comprometida em proteger os seus dados pessoais. Esta política explica de forma simples como lidamos com as informações coletadas em nossa plataforma.
-            </p>
-            
-            <div>
-              <h2 className="text-lg font-semibold text-text-main mb-2">Fase Inicial (MVP)</h2>
-              <p>
-                Atualmente, a Zelare está em fase inicial de validação (MVP). Isso significa que estamos testando o formato do serviço antes de construir um aplicativo completo. Nosso atendimento é humanizado e feito de forma semi-manual pela nossa equipe.
-              </p>
-            </div>
-            
-            <div>
-              <h2 className="text-lg font-semibold text-text-main mb-2">Quais dados coletamos?</h2>
-              <p>
-                Coletamos apenas as informações essenciais enviadas voluntariamente por você através de nossos formulários (como nome, telefone, região e detalhes da necessidade de cuidado ou do perfil profissional).
-              </p>
-            </div>
-            
-            <div>
-              <h2 className="text-lg font-semibold text-text-main mb-2">Como os dados são usados?</h2>
-              <p>
-                Seus dados são usados exclusivamente para:
-              </p>
-              <ul className="list-disc pl-5 mt-2 space-y-1">
-                <li>Analisar sua solicitação de cuidado ou cadastro profissional.</li>
-                <li>Entrar em contato com você via WhatsApp para organizar os atendimentos.</li>
-                <li>Melhorar a qualidade e segurança da nossa rede.</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h2 className="text-lg font-semibold text-text-main mb-2">Compartilhamento e Exposição</h2>
-              <p>
-                <strong>Seus dados não serão expostos publicamente.</strong> As informações são tratadas de forma confidencial pela nossa equipe de triagem. Apenas informações estritamente necessárias (como o bairro e o tipo de cuidado) serão compartilhadas entre a família e o profissional durante o processo de combinação do plantão.
-              </p>
-            </div>
-            
-            <div>
-              <h2 className="text-lg font-semibold text-text-main mb-2">Remoção de Dados</h2>
-              <p>
-                Você tem o direito de solicitar a remoção total dos seus dados da nossa base a qualquer momento. Basta entrar em contato conosco pelo WhatsApp oficial e sua solicitação será atendida prontamente.
-              </p>
-            </div>
-          </div>
+          <h2>1. Coleta de Dados</h2>
+          <p>Para o funcionamento da plataforma, coletamos:</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>De Famílias:</strong> Nome, contato, endereço, localização aproximada e detalhes sobre a necessidade de cuidado para a organização dos plantões.</li>
+            <li><strong>De Profissionais:</strong> Nome, contato, documentos, certificações, histórico profissional, foto e localização.</li>
+          </ul>
+
+          <h2>2. Uso dos Dados</h2>
+          <p>Os dados coletados são utilizados exclusivamente para a operação do serviço, incluindo o "match" entre a necessidade da família e o perfil do profissional, processamento financeiro e comunicação operacional.</p>
+
+          <h2>3. Compartilhamento</h2>
+          <p>A Zelare realiza o compartilhamento mínimo necessário de dados entre a família e o profissional aprovado para a execução do plantão (ex: o endereço exato só é compartilhado com o profissional após a confirmação e pagamento do plantão).</p>
+
+          <h2>4. Segurança</h2>
+          <p>Adotamos medidas técnicas para proteger os dados armazenados contra acessos não autorizados. Dados financeiros sensíveis (como cartões de crédito) são processados diretamente por gateways de pagamento homologados, não sendo armazenados em nossos servidores.</p>
+
+          <h2>5. Seus Direitos</h2>
+          <p>Você pode solicitar a exclusão, alteração ou exportação dos seus dados a qualquer momento entrando em contato com nosso suporte.</p>
         </div>
       </div>
     </div>

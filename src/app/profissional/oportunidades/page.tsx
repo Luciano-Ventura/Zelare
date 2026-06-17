@@ -10,7 +10,7 @@ export default async function OportunidadesPage() {
 
   const { data: oportunidades } = await supabaseAdmin
     .from("oportunidades_profissionais")
-    .select("id, status, valor_oferecido, familias_solicitacoes(cidade, bairro, tipo_profissional, duracao_plantao, data_inicio)")
+    .select("id, status, valor_oferecido, familias_solicitacoes(cidade, bairro, tipo_profissional, duracao_plantao, data_desejada)")
     .eq("profissional_id", sessao.id)
     .order("created_at", { ascending: false });
 
@@ -57,7 +57,7 @@ export default async function OportunidadesPage() {
                 </div>
                 <div className="flex items-center text-sm text-[#6B7280]">
                   <Calendar className="w-4 h-4 mr-2 text-[#8ECADF]" />
-                  A partir de {sol.data_inicio}
+                  A partir de {sol.data_desejada}
                 </div>
                 <div className="flex items-center text-sm text-[#6B7280]">
                   <Clock className="w-4 h-4 mr-2 text-[#8ECADF]" />

@@ -45,7 +45,7 @@ function SolicitarCuidadoForm() {
   const onSubmit = async (data: FamiliaData) => {
     setIsSubmitting(true);
     setErrorMsg("");
-    console.log("submit_solicitacao", data);
+    // Submit logic
 
     try {
       const res = await submitFamilia(data);
@@ -70,11 +70,19 @@ function SolicitarCuidadoForm() {
         </Link>
 
         <div className="bg-white rounded-3xl shadow-xl ring-1 ring-sand-light/50 overflow-hidden">
-          <div className="bg-blue-light/10 p-8 border-b border-sand-light/50">
-            <h1 className="text-3xl font-bold tracking-tight text-text-main mb-3">Solicitar cuidado</h1>
-            <p className="text-text-secondary text-base">
-              Preencha o formulário abaixo para que nossa equipe entenda sua necessidade e encontre o profissional ideal.
-            </p>
+          <div className="bg-blue-light/10 p-8 border-b border-sand-light/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-text-main mb-3">Solicitar cuidado</h1>
+              <p className="text-text-secondary text-base">
+                Preencha o formulário abaixo para que nossa equipe entenda sua necessidade e encontre o profissional ideal.
+              </p>
+            </div>
+            <Link 
+              href="/acompanhar" 
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-xl bg-white px-4 py-2 text-sm font-bold text-blue-600 shadow-sm border border-blue-100 hover:bg-blue-50 transition-colors"
+            >
+              Já solicitou um cuidado? Acompanhe aqui
+            </Link>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-8">
@@ -95,6 +103,7 @@ function SolicitarCuidadoForm() {
                   <input
                     id="nome_completo"
                     type="text"
+                    data-testid="familia-nome"
                     {...register("nome_completo")}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
                     placeholder="Seu nome"
@@ -106,6 +115,7 @@ function SolicitarCuidadoForm() {
                   <input
                     id="whatsapp"
                     type="tel"
+                    data-testid="familia-whatsapp"
                     {...register("whatsapp", {
                       onChange: (e) => {
                         e.target.value = maskPhone(e.target.value);
@@ -126,6 +136,7 @@ function SolicitarCuidadoForm() {
                   <input
                     id="cep"
                     type="text"
+                    data-testid="familia-cep"
                     {...register("cep", {
                       onChange: async (e) => {
                         const rawCep = e.target.value;
@@ -211,7 +222,7 @@ function SolicitarCuidadoForm() {
                     type="text"
                     {...register("cidade")}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
-                    placeholder="Ex: Florianópolis"
+                    placeholder="Ex: São Paulo"
                   />
                   {errors.cidade && <p className="mt-1 text-xs text-red-500">{errors.cidade.message}</p>}
                 </div>
@@ -321,17 +332,22 @@ function SolicitarCuidadoForm() {
                   {errors.duracao_plantao && <p className="mt-1 text-xs text-red-500">{errors.duracao_plantao.message}</p>}
                 </div>
                 <div>
-                  <label htmlFor="preferencia_atendimento" className="block text-sm font-medium text-text-main mb-1">Preferência de Custo/Atendimento</label>
+                  <label htmlFor="preferencia_atendimento" className="block text-sm font-medium text-text-main mb-1">Preferência de atendimento</label>
                   <select
                     id="preferencia_atendimento"
                     {...register("preferencia_atendimento")}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all bg-white"
                   >
                     <option value="">Selecione (Opcional)</option>
-                    <option value="Opção mais econômica">Opção mais econômica</option>
-                    <option value="Priorizar profissional mais experiente">Priorizar profissional mais experiente</option>
-                    <option value="Quero receber estimativa antes de confirmar">Quero receber estimativa antes de confirmar</option>
+                    <option value="Quero receber uma opção mais econômica">Quero receber uma opção mais econômica</option>
+                    <option value="Quero priorizar profissional mais experiente">Quero priorizar profissional mais experiente</option>
+                    <option value="Tenho urgência no atendimento">Tenho urgência no atendimento</option>
+                    <option value="Quero atendimento recorrente">Quero atendimento recorrente</option>
+                    <option value="Ainda não sei, preciso de orientação">Ainda não sei, preciso de orientação</option>
                   </select>
+                  <p className="mt-2 text-xs text-text-secondary">
+                    A Zelare irá analisar sua solicitação e informar o valor final antes da confirmação.
+                  </p>
                 </div>
               </div>
 
@@ -396,7 +412,7 @@ function SolicitarCuidadoForm() {
                 />
                 <div>
                   <label htmlFor="privacy_accepted" className="text-sm text-text-secondary">
-                    Li e aceito a <Link href="/politica-de-privacidade" className="text-blue-light hover:underline" target="_blank">Política de Privacidade</Link>.
+                    Li e aceito os <Link href="/termos-de-uso" className="text-blue-light hover:underline" target="_blank">Termos de Uso</Link>, a <Link href="/politica-de-privacidade" className="text-blue-light hover:underline" target="_blank">Política de Privacidade</Link> e a <Link href="/politica-de-cancelamento" className="text-blue-light hover:underline" target="_blank">Política de Cancelamento</Link>.
                   </label>
                   {errors.privacy_accepted && <p className="mt-1 text-xs text-red-500">{errors.privacy_accepted.message}</p>}
                 </div>
@@ -406,6 +422,7 @@ function SolicitarCuidadoForm() {
             <div className="pt-4">
               <button
                 type="submit"
+                data-testid="familia-enviar"
                 disabled={isSubmitting}
                 className="w-full flex items-center justify-center rounded-2xl bg-blue-light px-8 py-4 text-center text-lg font-semibold text-white shadow-lg shadow-blue-light/30 transition-all hover:-translate-y-1 hover:bg-blue-light/90 disabled:opacity-70 disabled:hover:translate-y-0"
               >

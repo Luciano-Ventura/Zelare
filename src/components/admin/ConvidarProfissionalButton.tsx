@@ -34,6 +34,7 @@ export function ConvidarProfissionalButton({ solicitacaoId, profissionalId, jaCo
   return (
     <button 
       onClick={handleConvidar} 
+      data-testid="enviar-convite"
       disabled={loading}
       className="flex items-center gap-1 px-3 py-1.5 bg-[#8ECADF]/10 hover:bg-[#8ECADF]/20 text-[#8ECADF] text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
     >

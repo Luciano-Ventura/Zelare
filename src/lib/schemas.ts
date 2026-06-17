@@ -30,7 +30,7 @@ export const familiaSchema = z.object({
     message: "Você deve aceitar o contato via WhatsApp."
   }),
   privacy_accepted: z.literal(true, {
-    message: "Você deve aceitar a Política de Privacidade."
+    message: "Você deve aceitar os Termos e Políticas."
   }),
 
   // Tracking oculto
@@ -62,13 +62,13 @@ export const profissionalSchema = z.object({
   disponibilidade: z.string().min(2, "Informe sua disponibilidade."),
   regioes_atende: z.string().min(2, "Informe as regiões que atende."),
   valor_medio: z.string().optional(),
-  valor_minimo_4h: z.number().optional(),
-  valor_minimo_6h: z.number().optional(),
-  valor_minimo_8h: z.number().optional(),
-  valor_minimo_12h: z.number().optional(),
-  valor_minimo_24h: z.number().optional(),
-  adicional_noturno: z.number().optional(),
-  adicional_urgencia: z.number().optional(),
+  valor_minimo_4h: z.preprocess((v) => (typeof v === "number" && isNaN(v)) || v === "" ? undefined : v, z.number().optional()),
+  valor_minimo_6h: z.preprocess((v) => (typeof v === "number" && isNaN(v)) || v === "" ? undefined : v, z.number().optional()),
+  valor_minimo_8h: z.preprocess((v) => (typeof v === "number" && isNaN(v)) || v === "" ? undefined : v, z.number().optional()),
+  valor_minimo_12h: z.preprocess((v) => (typeof v === "number" && isNaN(v)) || v === "" ? undefined : v, z.number().optional()),
+  valor_minimo_24h: z.preprocess((v) => (typeof v === "number" && isNaN(v)) || v === "" ? undefined : v, z.number().optional()),
+  adicional_noturno: z.preprocess((v) => (typeof v === "number" && isNaN(v)) || v === "" ? undefined : v, z.number().optional()),
+  adicional_urgencia: z.preprocess((v) => (typeof v === "number" && isNaN(v)) || v === "" ? undefined : v, z.number().optional()),
   aceita_negociacao: z.boolean().optional(),
   possui_referencias: z.boolean().optional(),
   observacoes: z.string().optional(),
@@ -80,7 +80,7 @@ export const profissionalSchema = z.object({
     message: "Você deve aceitar o contato via WhatsApp."
   }),
   privacy_accepted: z.literal(true, {
-    message: "Você deve aceitar a Política de Privacidade."
+    message: "Você deve aceitar os Termos e Políticas."
   }),
   veracity_accepted: z.literal(true, {
     message: "Você deve declarar que as informações são verdadeiras."

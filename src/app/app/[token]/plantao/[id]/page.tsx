@@ -40,6 +40,7 @@ export default async function DetalhesPlantao({
   }
 
   const isAtivo = plantao.status !== "Cancelado" && plantao.status !== "Concluído";
+  const podeVerDetalhes = plantao.status === "Confirmado" || plantao.status === "Em andamento" || plantao.status === "Concluído";
 
   return (
     <div className="space-y-6">
@@ -55,14 +56,23 @@ export default async function DetalhesPlantao({
 
       <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
         <div className="flex items-center text-sm font-bold text-[#2F3437] mb-4">
-          <User className="w-4 h-4 mr-2 text-[#8ECADF]" /> {plantao.familia_nome}
+          <User className="w-4 h-4 mr-2 text-[#8ECADF]" /> {podeVerDetalhes ? plantao.familia_nome : "Família Cliente"}
         </div>
         <div className="flex items-start text-sm font-bold text-[#2F3437] mb-4">
           <MapPin className="w-4 h-4 mr-2 mt-0.5 text-[#8ECADF] flex-shrink-0" /> 
           <div>
-            <p>{plantao.familias_solicitacoes?.endereco_completo}, {plantao.familias_solicitacoes?.endereco_numero}</p>
-            <p className="text-gray-500 font-medium">{plantao.familias_solicitacoes?.endereco_bairro} - {plantao.familias_solicitacoes?.endereco_cidade}</p>
-            {plantao.familias_solicitacoes?.endereco_complemento && <p className="text-gray-500 font-medium">Comp: {plantao.familias_solicitacoes?.endereco_complemento}</p>}
+            {podeVerDetalhes ? (
+              <>
+                <p>{plantao.familias_solicitacoes?.endereco_completo}, {plantao.familias_solicitacoes?.endereco_numero}</p>
+                <p className="text-gray-500 font-medium">{plantao.familias_solicitacoes?.endereco_bairro} - {plantao.familias_solicitacoes?.endereco_cidade}</p>
+                {plantao.familias_solicitacoes?.endereco_complemento && <p className="text-gray-500 font-medium">Comp: {plantao.familias_solicitacoes?.endereco_complemento}</p>}
+              </>
+            ) : (
+              <>
+                <p className="text-gray-500 font-medium">{plantao.familias_solicitacoes?.endereco_bairro} - {plantao.familias_solicitacoes?.endereco_cidade}</p>
+                <p className="text-xs text-orange-600 mt-1">Endereço completo será liberado após o pagamento.</p>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center text-sm font-bold text-[#2F3437] mb-4">

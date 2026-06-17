@@ -40,6 +40,7 @@ export default function ResponderOportunidade({ id, statusAtual }: { id: string,
         <>
           <button 
             onClick={() => handleAction("Aceita")}
+            data-testid="aceitar-convite"
             disabled={loading}
             className="w-full bg-[#8ECADF] text-[#2F3437] py-4 rounded-2xl text-base font-black hover:brightness-95 transition-all shadow-md disabled:opacity-50"
           >

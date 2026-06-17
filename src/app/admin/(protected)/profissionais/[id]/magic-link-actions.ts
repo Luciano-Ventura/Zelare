@@ -8,13 +8,19 @@ export async function generateOrRegenerateMagicLink(profissionalId: string) {
   await requireAdmin();
 
   const newToken = crypto.randomUUID();
+  const newOtp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
 
   const { error } = await supabaseAdmin
     .from("profissionais_cadastros")
     .update({
+      // Magic Link (V1)
       token_acesso: newToken,
       token_gerado_em: new Date().toISOString(),
       acesso_app_status: "Ativo",
+      
+      // PWA OTP (V2)
+      acesso_token: newOtp,
+      status_acesso: "Ativo",
     })
     .eq("id", profissionalId);
 
@@ -41,6 +47,7 @@ export async function blockMagicLink(profissionalId: string) {
     .from("profissionais_cadastros")
     .update({
       acesso_app_status: "Bloqueado",
+      status_acesso: "Bloqueado",
     })
     .eq("id", profissionalId);
 

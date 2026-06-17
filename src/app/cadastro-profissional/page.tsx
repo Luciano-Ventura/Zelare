@@ -14,6 +14,7 @@ function CadastroProfissionalForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingCep, setIsFetchingCep] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const {
@@ -46,7 +47,7 @@ function CadastroProfissionalForm() {
   const onSubmit = async (data: ProfissionalData) => {
     setIsSubmitting(true);
     setErrorMsg("");
-    console.log("submit_profissional", data);
+    // Submit logic
 
     try {
       const res = await submitProfissional(data);
@@ -71,11 +72,19 @@ function CadastroProfissionalForm() {
         </Link>
 
         <div className="bg-white rounded-3xl shadow-xl ring-1 ring-sand-light/50 overflow-hidden">
-          <div className="bg-green-light/10 p-8 border-b border-sand-light/50">
-            <h1 className="text-3xl font-bold tracking-tight text-text-main mb-3">Cadastro de Profissional</h1>
-            <p className="text-text-secondary text-base">
-              Preencha o formulário abaixo para fazer parte da rede de profissionais parceiros da Zelare.
-            </p>
+          <div className="bg-green-light/10 p-8 border-b border-sand-light/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-text-main mb-3">Cadastro de Profissional</h1>
+              <p className="text-text-secondary text-base">
+                Preencha o formulário abaixo para fazer parte da rede de profissionais parceiros da Zelare.
+              </p>
+            </div>
+            <Link 
+              href="/profissional/login" 
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-xl bg-white px-4 py-2 text-sm font-bold text-blue-600 shadow-sm border border-blue-100 hover:bg-blue-50 transition-colors"
+            >
+              Já tem cadastro? Entrar no painel
+            </Link>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-8">
@@ -96,6 +105,7 @@ function CadastroProfissionalForm() {
                   <input
                     id="nome_completo"
                     type="text"
+                    data-testid="profissional-nome"
                     {...register("nome_completo")}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
                     placeholder="Seu nome"
@@ -107,6 +117,7 @@ function CadastroProfissionalForm() {
                   <input
                     id="whatsapp"
                     type="tel"
+                    data-testid="profissional-whatsapp"
                     {...register("whatsapp", {
                       onChange: (e) => {
                         e.target.value = maskPhone(e.target.value);
@@ -129,11 +140,37 @@ function CadastroProfissionalForm() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="cep_base" className="block text-sm font-medium text-text-main mb-1">CEP</label>
+                  <label htmlFor="cep_base" className="block text-sm font-medium text-text-main mb-1 flex justify-between items-center">
+                    CEP {isFetchingCep && <span className="text-blue-500 font-normal text-xs">Buscando endereço...</span>}
+                  </label>
                   <input
                     id="cep_base"
                     type="text"
-                    {...register("cep_base")}
+                    data-testid="profissional-cep"
+                    {...register("cep_base", {
+                      onChange: async (e) => {
+                        const rawCep = e.target.value;
+                        const cleanCep = rawCep.replace(/\D/g, "");
+                        if (cleanCep.length === 8) {
+                          setIsFetchingCep(true);
+                          try {
+                            const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+                            const data = await res.json();
+                            if (!data.erro) {
+                              setValue("endereco_base", data.logradouro);
+                              setValue("bairro", data.bairro);
+                              setValue("cidade", data.localidade);
+                              setValue("estado", data.uf);
+                            } else {
+                              alert("Não conseguimos localizar esse CEP. Preencha o endereço manualmente.");
+                            }
+                          } catch (err) {
+                            console.error("Erro ao buscar CEP", err);
+                          }
+                          setIsFetchingCep(false);
+                        }
+                      }
+                    })}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
                     placeholder="Ex: 88000-000"
                   />
@@ -196,7 +233,7 @@ function CadastroProfissionalForm() {
                     type="text"
                     {...register("cidade")}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
-                    placeholder="Ex: Florianópolis"
+                    placeholder="Ex: São Paulo"
                   />
                   {errors.cidade && <p className="mt-1 text-xs text-red-500">{errors.cidade.message}</p>}
                 </div>
@@ -477,9 +514,21 @@ function CadastroProfissionalForm() {
                 />
                 <div>
                   <label htmlFor="privacy_accepted" className="text-sm text-text-secondary">
-                    Li e aceito a <Link href="/politica-de-privacidade" className="text-blue-light hover:underline" target="_blank">Política de Privacidade</Link>.
+                    Li e aceito os <Link href="/termos-de-uso" className="text-blue-light hover:underline" target="_blank">Termos de Uso</Link>, a <Link href="/politica-de-privacidade" className="text-blue-light hover:underline" target="_blank">Política de Privacidade</Link> e a <Link href="/politica-de-cancelamento" className="text-blue-light hover:underline" target="_blank">Política de Cancelamento</Link>.
                   </label>
                   {errors.privacy_accepted && <p className="mt-1 text-xs text-red-500">{errors.privacy_accepted.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-6 mb-6">
+              <div className="flex items-start gap-3">
+                <Info className="w-6 h-6 text-indigo-500 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-bold text-indigo-900 mb-1">Próximos passos</h4>
+                  <p className="text-sm text-indigo-800">
+                    Após o cadastro, a equipe da Zelare entrará em contato pelo WhatsApp para validar suas informações e solicitar documentos necessários, como documento de identificação, comprovantes e antecedentes, quando aplicável. <strong>Seu cadastro passará por análise antes de receber oportunidades.</strong>
+                  </p>
                 </div>
               </div>
             </div>
@@ -487,6 +536,7 @@ function CadastroProfissionalForm() {
             <div className="pt-4">
               <button
                 type="submit"
+                data-testid="profissional-enviar"
                 disabled={isSubmitting}
                 className="w-full flex items-center justify-center rounded-2xl bg-blue-light px-8 py-4 text-center text-lg font-semibold text-white shadow-lg shadow-blue-light/30 transition-all hover:-translate-y-1 hover:bg-blue-light/90 disabled:opacity-70 disabled:hover:translate-y-0"
               >

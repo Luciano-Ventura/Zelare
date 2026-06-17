@@ -27,7 +27,7 @@ export default function Hero() {
           
           <div className="flex-1 text-center lg:text-left">
             <div className="inline-flex items-center rounded-full bg-sand-light/50 px-3 py-1 text-sm font-medium text-text-main mb-6">
-              Cuidado domiciliar na Grande Florianópolis
+              Cuidado domiciliar em expansão pelo Brasil
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight text-text-main sm:text-5xl xl:text-6xl">
               Precisa de cuidador, babá ou profissional de enfermagem?
@@ -36,13 +36,14 @@ export default function Hero() {
               A Zelare conecta sua família a profissionais de cuidado para plantões avulsos ou recorrentes, com agilidade, segurança e confiança.
             </p>
             <p className="mt-2 text-sm text-text-secondary/80">
-              Atendimento inicial em São José, Florianópolis, Palhoça, Biguaçu e região. A disponibilidade depende da região, horário e profissionais cadastrados.
+              A Zelare está em expansão para conectar famílias a profissionais de cuidado domiciliar em diferentes regiões do Brasil. A disponibilidade do atendimento depende da região, do tipo de cuidado e dos profissionais cadastrados no momento da solicitação.
             </p>
             
             <div className="mt-8 flex flex-col gap-4 max-w-lg mx-auto lg:mx-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link
                   href={LINKS.requestCare}
+                  data-testid="cta-solicitar-cuidado"
                   className="flex h-14 items-center justify-center rounded-2xl bg-blue-light px-4 text-center text-base font-semibold text-white shadow-lg shadow-blue-light/30 transition-transform hover:-translate-y-1"
                   onClick={() => console.log('clique_solicitar_cuidado')}
                 >
@@ -50,6 +51,7 @@ export default function Hero() {
                 </Link>
                 <Link
                   href={LINKS.professionalRegistration}
+                  data-testid="cta-cadastrar-profissional"
                   className="flex h-14 items-center justify-center rounded-2xl bg-white px-4 text-center text-base font-semibold text-text-main shadow-sm transition-transform hover:-translate-y-1 ring-1 ring-sand-light"
                   onClick={() => console.log('clique_cadastro_profissional')}
                 >

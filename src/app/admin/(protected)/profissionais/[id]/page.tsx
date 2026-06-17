@@ -9,6 +9,7 @@ import { ObservacoesList } from "@/components/admin/ObservacoesList";
 
 import { EditProfissionalModal } from "@/components/admin/EditProfissionalModal";
 import { DeleteProfissionalButton } from "@/components/admin/DeleteProfissionalButton";
+import { ChecklistValidacao } from "./ChecklistValidacao";
 import { MagicLinkManager } from "@/components/admin/MagicLinkManager";
 
 export const revalidate = 0;
@@ -94,13 +95,11 @@ export default async function ProfissionalDetails({ params }: { params: Promise<
     "Bloqueado"
   ];
 
-  const mapIframeUrl = prof.latitude_base && prof.longitude_base 
-    ? `https://www.openstreetmap.org/export/embed.html?bbox=${prof.longitude_base-0.01},${prof.latitude_base-0.01},${prof.longitude_base+0.01},${prof.latitude_base+0.01}&layer=mapnik&marker=${prof.latitude_base},${prof.longitude_base}` 
-    : null;
+  const addressQuery = encodeURIComponent(`${prof.cep_base || ''} ${prof.endereco_base_completo || ''} ${prof.endereco_base_numero || ''} ${prof.cidade || ''}`.replace(/\s+/g, ' ').trim());
   
-  const googleMapsUrl = prof.latitude_base && prof.longitude_base
-    ? `https://www.google.com/maps/search/?api=1&query=${prof.latitude_base},${prof.longitude_base}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(prof.endereco_base_completo || prof.cidade)}`;
+  const mapIframeUrl = addressQuery ? `https://maps.google.com/maps?q=${addressQuery}&t=&z=14&ie=UTF8&iwloc=&output=embed` : null;
+  
+  const googleMapsUrl = addressQuery ? `https://www.google.com/maps/search/?api=1&query=${addressQuery}` : null;
 
   return (
     <div className="space-y-6">
@@ -133,7 +132,7 @@ export default async function ProfissionalDetails({ params }: { params: Promise<
                 "use server";
                 await supabaseAdmin.from("profissionais_cadastros").update({ status: "Validado" }).eq("id", prof.id);
               }}>
-                <button type="submit" className="px-4 py-2 bg-[#8ECADF] text-[#2F3437] hover:brightness-95 rounded-xl text-xs font-bold transition-all">
+                <button type="submit" data-testid="aprovar-profissional" className="px-4 py-2 bg-[#8ECADF] text-[#2F3437] hover:brightness-95 rounded-xl text-xs font-bold transition-all">
                   Aprovar Validado
                 </button>
               </form>
@@ -222,11 +221,7 @@ export default async function ProfissionalDetails({ params }: { params: Promise<
                 {prof.raio_atendimento_km && <p className="text-xs font-medium text-blue-700 mt-1">Raio de atendimento: {prof.raio_atendimento_km} km</p>}
                 
                 <div className="mt-4 border-t border-gray-100 pt-4">
-                  {!prof.latitude_base || !prof.longitude_base ? (
-                    <div className="p-4 bg-orange-50 text-orange-800 text-sm rounded-xl border border-orange-100">
-                      Este profissional ainda não possui localização base precisa (latitude/longitude pendentes).
-                    </div>
-                  ) : (
+                  {!mapIframeUrl ? null : (
                     <div className="space-y-3">
                       <div className="w-full h-48 rounded-xl overflow-hidden border border-gray-200">
                         <iframe 
@@ -240,7 +235,7 @@ export default async function ProfissionalDetails({ params }: { params: Promise<
                           className="w-full h-full"
                         />
                       </div>
-                      <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                      <a href={googleMapsUrl!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium">
                         <MapPin className="w-4 h-4" /> Abrir no Google Maps
                       </a>
                     </div>
@@ -351,6 +346,12 @@ export default async function ProfissionalDetails({ params }: { params: Promise<
             )}
           </div>
 
+          <ChecklistValidacao 
+            profissionalId={prof.id} 
+            initialChecklist={prof.checklist_validacao || {}} 
+            isAtivoOuValidado={prof.status === 'Validado' || prof.status === 'Ativo'} 
+          />
+
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 className="text-sm font-bold text-text-main mb-4">Gerenciar Status</h3>
             <UpdateStatusForm table="profissionais_cadastros" id={prof.id} currentStatus={prof.status} options={statusOptions} />
@@ -362,6 +363,7 @@ export default async function ProfissionalDetails({ params }: { params: Promise<
             whatsapp={prof.whatsapp}
             token={prof.token_acesso}
             status={prof.acesso_app_status}
+            acessoToken={prof.acesso_token}
           />
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

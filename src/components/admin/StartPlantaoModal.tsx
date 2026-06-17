@@ -246,7 +246,7 @@ export function StartPlantaoModal({
 
   return (
     <>
-      <button onClick={() => setIsOpen(true)} className="w-full py-2 bg-[#8ECADF] text-[#2F3437] rounded-lg text-sm font-bold hover:brightness-95 transition-all shadow-sm flex items-center justify-center gap-2">
+      <button onClick={() => setIsOpen(true)} data-testid="criar-plantao" className="w-full py-2 bg-[#8ECADF] text-[#2F3437] rounded-lg text-sm font-bold hover:brightness-95 transition-all shadow-sm flex items-center justify-center gap-2">
         <CalendarClock className="w-4 h-4" /> Agendar Plantão ou Pacote
       </button>
 
