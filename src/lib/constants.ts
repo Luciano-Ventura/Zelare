@@ -77,7 +77,7 @@ export const TRUST_CARDS = [
   },
   {
     title: "Combinação clara",
-    description: "Família e profissional alinham horário, local, valor e tipo de cuidado antes do plantão.",
+    description: "Nossa equipe alinha horário, local, valor e tipo de cuidado com o profissional antes da sua confirmação.",
     icon: ShieldCheck,
   },
   {
@@ -91,7 +91,7 @@ export const HOW_IT_WORKS_STEPS = [
   { step: "1", title: "Você solicita o cuidado", description: "Informe região, data, horário, tipo de cuidado e observações importantes." },
   { step: "2", title: "A Zelare analisa o pedido", description: "Nossa equipe entende a necessidade e verifica o perfil ideal para o atendimento." },
   { step: "3", title: "Profissionais disponíveis respondem", description: "Profissionais cadastrados podem aceitar, recusar ou enviar uma contraproposta." },
-  { step: "4", title: "O plantão é combinado", description: "Família e profissional alinham os detalhes antes da confirmação." },
+  { step: "4", title: "O plantão é combinado", description: "Nossa equipe seleciona o perfil ideal e você aprova antes de realizar o pagamento." },
   { step: "5", title: "Você avalia o atendimento", description: "Após o plantão, coletamos a avaliação para melhorar a qualidade da rede." },
 ];
 
