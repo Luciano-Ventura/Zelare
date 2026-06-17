@@ -45,7 +45,7 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
   // Buscar profissionais disponíveis para o Modal
   const { data: profissionais } = await supabaseAdmin
     .from("profissionais_cadastros")
-    .select("id, nome_completo, categoria_profissional, cidade, bairro, regioes_atende, status, latitude_base, longitude_base, raio_atendimento_km, localizacao_pendente, valor_minimo_4h, valor_minimo_6h, valor_minimo_8h, valor_minimo_12h, valor_minimo_24h, adicional_noturno, adicional_urgencia")
+    .select("id, nome_completo, whatsapp, categoria_profissional, cidade, bairro, regioes_atende, status, latitude_base, longitude_base, raio_atendimento_km, localizacao_pendente, valor_minimo_4h, valor_minimo_6h, valor_minimo_8h, valor_minimo_12h, valor_minimo_24h, adicional_noturno, adicional_urgencia")
     .in("status", ["Validado", "Disponível", "Ativo"]);
 
   // Buscar plantões ativos para verificar conflito de agenda no modal
