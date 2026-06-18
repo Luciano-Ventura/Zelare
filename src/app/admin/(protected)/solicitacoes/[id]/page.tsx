@@ -482,7 +482,7 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
                             jaConvidado={!!convite} 
                             statusConvite={convite?.status}
                             valorContraproposta={convite?.valor_contraproposta}
-                            jaEfetivado={plantoes && plantoes.length > 0}
+                            jaEfetivado={!!(plantoes && plantoes.length > 0)}
                             resumoEfetivacao={{
                               familia_nome: solic.nome_completo,
                               tipo_cuidado: solic.tipo_profissional || "Cuidador",
