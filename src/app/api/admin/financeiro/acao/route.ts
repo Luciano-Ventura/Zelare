@@ -29,15 +29,40 @@ export async function POST(req: Request) {
     }
 
     if (action === "marcar_pago") {
+      const { data: pagamento } = await supabaseAdmin.from("pagamentos").select("plantao_id, solicitacao_id, pacote_id").eq("id", id).single();
+      
       const { error } = await supabaseAdmin
         .from("pagamentos")
         .update({ 
           status_pagamento: "Pago",
+          status: "PAID",
           pago_em: new Date().toISOString()
         })
         .eq("id", id);
       
       if (error) throw error;
+      
+      if (pagamento) {
+        if (pagamento.plantao_id) {
+          const { data: pl } = await supabaseAdmin.from("plantoes").select("status").eq("id", pagamento.plantao_id).single();
+          const newStatus = (pl?.status === "Concluído" || pl?.status === "Cancelado" || pl?.status === "Em andamento") ? pl?.status : "Confirmado";
+          await supabaseAdmin.from("plantoes").update({ status: newStatus, status_financeiro: "Pagamento confirmado" }).eq("id", pagamento.plantao_id);
+        } else if (pagamento.pacote_id) {
+          await supabaseAdmin.from("pacotes_plantoes").update({ status: "Pago" }).eq("id", pagamento.pacote_id);
+          const { data: plantoesPacote } = await supabaseAdmin.from("plantoes").select("id, status").eq("pacote_id", pagamento.pacote_id);
+          if (plantoesPacote) {
+            for (const p of plantoesPacote) {
+               const newStatus = (p.status === "Concluído" || p.status === "Cancelado" || p.status === "Em andamento") ? p.status : "Confirmado";
+               await supabaseAdmin.from("plantoes").update({ status: newStatus, status_financeiro: "Pagamento confirmado" }).eq("id", p.id);
+            }
+          }
+        }
+        
+        if (pagamento.solicitacao_id) {
+          await supabaseAdmin.from("familias_solicitacoes").update({ status: "Confirmado", pagamento_status: "PAID" }).eq("id", pagamento.solicitacao_id);
+        }
+      }
+      
       return NextResponse.json({ success: true });
     }
 

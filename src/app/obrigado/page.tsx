@@ -8,6 +8,7 @@ import { Suspense } from "react";
 function ObrigadoContent() {
   const searchParams = useSearchParams();
   const tipo = searchParams.get("tipo");
+  const codigo = searchParams.get("codigo");
 
   const isProfissional = tipo === "profissional";
 
@@ -26,6 +27,19 @@ function ObrigadoContent() {
           ? "Cadastro recebido pela Zelare. Nossa equipe poderá entrar em contato pelo WhatsApp para confirmar informações e concluir a análise do seu perfil. O envio do cadastro não garante oportunidades imediatas."
           : "Solicitação recebida pela Zelare. Nossa equipe poderá entrar em contato pelo WhatsApp para confirmar os detalhes e verificar profissionais disponíveis. O envio da solicitação não garante disponibilidade imediata."}
       </p>
+
+      {!isProfissional && codigo && (
+        <div className="bg-sand-light/10 p-6 rounded-2xl border border-sand-light/50 mb-8 w-full">
+          <p className="text-sm text-text-secondary mb-2">Seu código de acompanhamento:</p>
+          <p className="text-2xl font-mono font-bold text-blue-600 tracking-wider mb-4">{codigo}</p>
+          <Link
+            href={`/acompanhar`}
+            className="inline-block text-sm font-semibold text-blue-light hover:underline"
+          >
+            Acompanhar status da solicitação
+          </Link>
+        </div>
+      )}
 
       <Link
         href="/"

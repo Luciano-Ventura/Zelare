@@ -31,17 +31,17 @@ export const NAVIGATION = [
 export const HERO_CARDS = [
   {
     title: "Profissionais cadastrados e analisados",
-    description: "Triagem inicial manual",
+    description: "Triagem inicial cuidadosa",
     icon: UserCheck
   },
   {
-    title: "Atendimento humanizado",
-    description: "Apoio próximo pelo WhatsApp",
+    title: "Atendimento acompanhado",
+    description: "Organização e acompanhamento operacional",
     icon: HeartHandshake
   },
   {
-    title: "Combinação clara",
-    description: "Horário, valor e cuidado alinhados antes do plantão",
+    title: "Pagamento centralizado",
+    description: "Segurança e praticidade na Zelare",
     icon: ShieldCheck
   }
 ];
@@ -66,33 +66,33 @@ export const HERO_IMAGES = [
 
 export const TRUST_CARDS = [
   {
-    title: "Cadastro analisado",
-    description: "Profissionais passam por uma triagem inicial antes de receber oportunidades.",
+    title: "Profissionais analisados",
+    description: "Profissionais cadastrados passam por análise.",
     icon: UserCheck,
   },
   {
-    title: "Atendimento acompanhado",
-    description: "A Zelare acompanha os primeiros contatos de forma manual pelo WhatsApp.",
+    title: "Atendimento organizado",
+    description: "A Zelare organiza e acompanha a operação.",
     icon: HeartHandshake,
   },
   {
-    title: "Combinação clara",
-    description: "Nossa equipe alinha horário, local, valor e tipo de cuidado com o profissional antes da sua confirmação.",
+    title: "Pagamento centralizado",
+    description: "Centralizamos e facilitamos o pagamento.",
     icon: ShieldCheck,
   },
   {
-    title: "Atendimento em expansão",
-    description: "A Zelare está em expansão para conectar famílias a profissionais pelo Brasil, sujeito a disponibilidade na região.",
+    title: "Solicitações avaliadas",
+    description: "Cada caso é avaliado individualmente pela equipe.",
     icon: MapPin,
   },
 ];
 
 export const HOW_IT_WORKS_STEPS = [
-  { step: "1", title: "Você solicita o cuidado", description: "Informe o tipo de atendimento, local, data, horário e principais necessidades da pessoa que receberá o cuidado." },
-  { step: "2", title: "A Zelare analisa sua solicitação", description: "Nossa equipe avalia a região, duração, tipo de cuidado, complexidade e disponibilidade de profissionais compatíveis." },
-  { step: "3", title: "Buscamos profissionais cadastrados e analisados", description: "A Zelare procura profissionais com perfil compatível, considerando região de atendimento, disponibilidade, experiência e agenda." },
-  { step: "4", title: "Você recebe o valor final do plantão", description: "O valor é informado pela Zelare com base nas características do atendimento e já considera a organização, triagem, acompanhamento e suporte da operação." },
-  { step: "5", title: "O plantão é confirmado após o pagamento", description: "Após a confirmação da família e o pagamento online, o plantão é confirmado e acompanhado pela Zelare." },
+  { step: "1", title: "Você solicita o cuidado", description: "Informe quem precisa de atendimento, o tipo de cuidado, local, data, horário e principais necessidades." },
+  { step: "2", title: "A Zelare analisa sua solicitação", description: "Avaliamos região, duração, horário, complexidade, urgência e disponibilidade de profissionais compatíveis." },
+  { step: "3", title: "Buscamos profissionais analisados", description: "Selecionamos profissionais considerando região de atendimento, experiência, disponibilidade e perfil do cuidado." },
+  { step: "4", title: "Você recebe o valor final", description: "O valor é informado pela Zelare após análise da solicitação e já considera a organização, busca, triagem, confirmação e acompanhamento." },
+  { step: "5", title: "O plantão é confirmado", description: "Depois do aceite da família e pagamento, a Zelare confirma o plantão e acompanha o atendimento." },
 ];
 
 export const CARE_TYPES = [
@@ -142,35 +142,31 @@ export const SAFETY_CARDS = [
 
 export const FAQS = [
   {
-    question: "A Zelare já é um aplicativo?",
-    answer: "Não. A Zelare está em fase inicial de validação, com atendimento via landing page, formulários e WhatsApp. O objetivo é validar a demanda antes de construir uma plataforma completa."
-  },
-  {
     question: "A família pode escolher quanto quer pagar?",
-    answer: "Não. Para manter uma operação organizada e justa para famílias e profissionais, a Zelare calcula o valor do plantão com base na região, duração, horário, tipo de cuidado e disponibilidade dos profissionais. A família recebe o valor final antes de confirmar o atendimento."
+    answer: "Não. Para manter uma operação organizada e justa, a Zelare calcula o valor do plantão com base na região, duração, horário, tipo de cuidado, complexidade e disponibilidade profissional. A família recebe o valor final antes de confirmar."
   },
   {
-    question: "A Zelare cobra alguma taxa separada?",
-    answer: "A família recebe um valor final do plantão. Esse valor já considera a operação da Zelare, incluindo análise da solicitação, triagem, busca de profissional compatível, organização, confirmação e acompanhamento do atendimento."
+    question: "A Zelare cobra taxa separada?",
+    answer: "A família recebe um valor final do plantão. Esse valor já considera a operação da Zelare, incluindo análise da solicitação, busca de profissional compatível, triagem, confirmação, organização e acompanhamento."
   },
   {
     question: "Quando o plantão é confirmado?",
-    answer: "O plantão é confirmado após a família aceitar o valor informado e realizar o pagamento online."
+    answer: "O plantão é confirmado após a família aceitar o valor informado e realizar o pagamento."
   },
   {
-    question: "O que está incluído no valor do plantão?",
-    answer: "O valor inclui o atendimento combinado com o profissional e a operação da Zelare para organizar o plantão, analisar a solicitação, buscar profissionais compatíveis, acompanhar a confirmação e oferecer suporte durante o processo."
+    question: "O que está incluído no valor?",
+    answer: "O valor inclui o atendimento combinado e a operação da Zelare para organizar, confirmar e acompanhar o plantão."
   },
   {
     question: "O valor pode mudar?",
-    answer: "O valor pode variar conforme região, horário, duração, complexidade, urgência, deslocamento e disponibilidade de profissionais. A família sempre será informada do valor final antes da confirmação."
+    answer: "O valor pode variar conforme região, duração, horário, urgência, complexidade, deslocamento e disponibilidade de profissionais. A família sempre será informada do valor final antes da confirmação."
   },
   {
-    question: "A Zelare faz atendimento médico?",
-    answer: "Não. A Zelare conecta famílias a profissionais de cuidado. Casos de urgência, emergência ou atendimento médico devem ser direcionados aos serviços adequados."
+    question: "A Zelare atende emergências?",
+    answer: "Não. A Zelare não é serviço de emergência e não substitui atendimento médico, hospitalar ou SAMU. Em casos urgentes de saúde, procure os canais oficiais de emergência."
   },
   {
-    question: "Quais regiões são atendidas?",
-    answer: "A Zelare está em expansão pelo Brasil. A disponibilidade do atendimento depende da região, do tipo de cuidado e dos profissionais cadastrados no momento da solicitação."
+    question: "Já solicitei um cuidado. Como acompanho?",
+    answer: "Acesse \"Acompanhar plantão\" e informe o código enviado pela Zelare."
   }
 ];

@@ -3,6 +3,8 @@
 import { requireAdmin } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { revalidatePath } from "next/cache";
+import { getPaymentGateway } from "@/lib/payments";
+import { calcularPrecoPlantao } from "@/lib/financeiro";
 
 export async function createPlantao(data: {
   solicitacao_id: string;
@@ -472,12 +474,44 @@ export async function enviarConvite(solicitacaoId: string, profissionalId: strin
   await requireAdmin();
 
   try {
+    let finalValor = valorOferecido;
+
+    if (!finalValor) {
+      const { data: solic } = await supabaseAdmin.from("familias_solicitacoes").select("*").eq("id", solicitacaoId).single();
+      const { data: prof } = await supabaseAdmin.from("profissionais_cadastros").select("*").eq("id", profissionalId).single();
+
+      if (solic && prof && solic.duracao_plantao) {
+        const duracaoHoras = parseInt(solic.duracao_plantao.replace(/\D/g, "")) || 12;
+        
+        const resRegra = await fetchPricingConfig({ 
+          estado: solic.endereco_estado || solic.cidade?.split(" - ")[1], 
+          cidade: solic.endereco_cidade || solic.cidade?.split(" - ")[0], 
+          duracao_horas: duracaoHoras 
+        });
+
+        if (resRegra?.success && resRegra.data) {
+          const regiaoConfig = resRegra.data;
+          let minVal = null;
+          if (duracaoHoras === 24 && prof.valor_minimo_24h) minVal = prof.valor_minimo_24h;
+          else if (duracaoHoras === 12 && prof.valor_minimo_12h) minVal = prof.valor_minimo_12h;
+          else if (duracaoHoras === 8 && prof.valor_minimo_8h) minVal = prof.valor_minimo_8h;
+          else if (duracaoHoras === 6 && prof.valor_minimo_6h) minVal = prof.valor_minimo_6h;
+          else if (duracaoHoras === 4 && prof.valor_minimo_4h) minVal = prof.valor_minimo_4h;
+
+          const calcResult = calcularPrecoPlantao({ regiao: regiaoConfig, profissional: { valor_minimo_usado: minVal || null } });
+          if (calcResult.valor_profissional > 0) {
+            finalValor = calcResult.valor_profissional;
+          }
+        }
+      }
+    }
+
     const { error } = await supabaseAdmin
       .from("oportunidades_profissionais")
       .insert({
         solicitacao_id: solicitacaoId,
         profissional_id: profissionalId,
-        valor_oferecido: valorOferecido || null,
+        valor_oferecido: finalValor || null,
         status: "Enviada"
       });
 
@@ -624,3 +658,251 @@ export async function updateSolicitacao(id: string, formData: any) {
     return { error: "Erro ao atualizar solicitação: " + err.message };
   }
 }
+
+// ==========================================
+// EFETIVAR PLANTÃO E GERAR PIX (CAMINHO FELIZ)
+// ==========================================
+export async function efetivarPlantaoEPix(solicitacaoId: string, profissionalId: string) {
+  await requireAdmin();
+
+  try {
+    // 1. Validar se a solicitação existe e não está já com plantão
+    const { data: solic, error: solicError } = await supabaseAdmin
+      .from("familias_solicitacoes")
+      .select("*")
+      .eq("id", solicitacaoId)
+      .single();
+
+    if (solicError || !solic) {
+      throw new Error("Solicitação não encontrada.");
+    }
+    if (solic.status === "Aguardando pagamento" || solic.status === "Pagamento confirmado" || solic.status === "Confirmado") {
+      throw new Error("Esta solicitação já possui um plantão ou cobrança gerada.");
+    }
+
+    // Verifica se já existe plantão ativo para não duplicar
+    const { data: plantaoExistente } = await supabaseAdmin
+      .from("plantoes")
+      .select("id")
+      .eq("solicitacao_id", solicitacaoId)
+      .limit(1);
+
+    if (plantaoExistente && plantaoExistente.length > 0) {
+      throw new Error("Esta solicitação já possui um plantão ativo.");
+    }
+
+    // 2. Validar profissional
+    const { data: prof, error: profError } = await supabaseAdmin
+      .from("profissionais_cadastros")
+      .select("*")
+      .eq("id", profissionalId)
+      .single();
+
+    if (profError || !prof) {
+      throw new Error("Profissional não encontrado.");
+    }
+    if (prof.status !== "Validado") {
+      throw new Error("Profissional não está com status Validado.");
+    }
+
+    // 3. Validar convite (oportunidade)
+    const { data: convite, error: conviteError } = await supabaseAdmin
+      .from("oportunidades_profissionais")
+      .select("status")
+      .eq("solicitacao_id", solicitacaoId)
+      .eq("profissional_id", profissionalId)
+      .single();
+
+    if (conviteError || !convite || convite.status !== "Aceita") {
+      throw new Error("O profissional não aceitou o convite (ou o status não é 'Aceita').");
+    }
+
+    // 4. Calcular horários
+    if (!solic.data_desejada || !solic.horario_desejado || !solic.duracao_plantao) {
+      throw new Error("A solicitação não possui data_desejada, horario_desejado ou duracao_plantao configurados corretamente.");
+    }
+    
+    // Calcula fim e ISOs
+    const baseDate = solic.data_desejada.split("T")[0]; // assumindo formato date ou YYYY-MM-DD
+    const horarioInicio = solic.horario_desejado;
+    
+    // A duração pode vir como "12h" etc
+    const duracaoHoras = parseInt(solic.duracao_plantao.replace(/\D/g, "")) || 12;
+    
+    const startIso = `${baseDate}T${horarioInicio}:00-03:00`;
+    const startDate = new Date(startIso);
+    if (isNaN(startDate.getTime())) {
+       throw new Error("Formato de data e horário inválido na solicitação.");
+    }
+
+    const endDate = new Date(startDate.getTime() + duracaoHoras * 60 * 60 * 1000);
+    const finalInicioEm = startDate.toISOString();
+    const finalFimEm = endDate.toISOString();
+    
+    // formata horário fim em HH:mm
+    const horarioFim = endDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+    const dataPlantaoStr = startDate.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" });
+
+    // 5. Validar agenda do profissional
+    const { data: conflitos, error: conflitosError } = await supabaseAdmin
+      .from("plantoes")
+      .select("id")
+      .eq("profissional_id", profissionalId)
+      .in("status", ["Confirmado", "Em andamento", "Reagendado"])
+      .lt("inicio_em", finalFimEm)
+      .gt("fim_em", finalInicioEm);
+
+    if (conflitosError) throw new Error("Erro ao verificar agenda.");
+    if (conflitos && conflitos.length > 0) {
+      throw new Error("O profissional já possui conflito de agenda nesse horário.");
+    }
+
+    // 6. Calcular Pricing (simula o frontend StartPlantaoModal)
+    // Busca a regra da região
+    const resRegra = await fetchPricingConfig({ 
+      estado: solic.endereco_estado || solic.cidade?.split(" - ")[1], 
+      cidade: solic.endereco_cidade || solic.cidade?.split(" - ")[0], 
+      duracao_horas: duracaoHoras 
+    });
+
+    if (!resRegra?.success || !resRegra.data) {
+      throw new Error("Não foi encontrada nenhuma regra de preço para essa região e duração.");
+    }
+
+    const regiaoConfig = resRegra.data;
+    
+    // Valor minimo do prof
+    let minVal = null;
+    if (duracaoHoras === 24 && prof.valor_minimo_24h) minVal = prof.valor_minimo_24h;
+    else if (duracaoHoras === 12 && prof.valor_minimo_12h) minVal = prof.valor_minimo_12h;
+    else if (duracaoHoras === 8 && prof.valor_minimo_8h) minVal = prof.valor_minimo_8h;
+    else if (duracaoHoras === 6 && prof.valor_minimo_6h) minVal = prof.valor_minimo_6h;
+    else if (duracaoHoras === 4 && prof.valor_minimo_4h) minVal = prof.valor_minimo_4h;
+
+    const calcResult = calcularPrecoPlantao({ regiao: regiaoConfig, profissional: { valor_minimo_usado: minVal || null } });
+    
+    if (calcResult.total_familia <= 0 || calcResult.valor_profissional <= 0) {
+      throw new Error("Erro no cálculo financeiro: os valores não podem ser zero ou negativos.");
+    }
+
+    // 7. Salva Plantão (Status Pendente de Gateway inicialmente)
+    const { data: novoPlantao, error: insertError } = await supabaseAdmin
+      .from("plantoes")
+      .insert({
+        solicitacao_id: solicitacaoId,
+        profissional_id: profissionalId,
+        familia_nome: solic.nome_completo,
+        familia_whatsapp: solic.whatsapp,
+        profissional_nome: prof.nome_completo,
+        profissional_whatsapp: prof.whatsapp,
+        data_plantao: dataPlantaoStr,
+        horario_inicio: horarioInicio,
+        duracao: solic.duracao_plantao,
+        cidade: solic.cidade || solic.endereco_cidade,
+        bairro: solic.bairro || solic.endereco_bairro,
+        tipo_cuidado: solic.tipo_profissional || "Cuidador",
+        valor_profissional: calcResult.valor_profissional,
+        taxa_zelare: calcResult.taxa_zelare,
+        total_familia: calcResult.total_familia,
+        inicio_em: finalInicioEm,
+        fim_em: finalFimEm,
+        status: "Criando pagamento...",
+        status_financeiro: "Aguardando pagamento",
+        pricing_id: regiaoConfig.id || null,
+        valor_base_regiao: regiaoConfig.valor_base || null,
+        valor_minimo_profissional_usado: minVal || null,
+        margem_percentual: regiaoConfig.margem_percentual || null,
+        adicionais_aplicados: {},
+        houve_ajuste_manual: false
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !novoPlantao) {
+      throw new Error("Erro ao criar o plantão: " + (insertError?.message || ""));
+    }
+
+    const plantaoId = novoPlantao.id;
+
+    // 8. Salva Repasse (Aguardando)
+    await supabaseAdmin
+      .from("repasses_profissionais")
+      .insert({
+        plantao_id: plantaoId,
+        profissional_id: profissionalId,
+        profissional_nome: prof.nome_completo,
+        profissional_pix: prof.pix_chave ? `${prof.pix_tipo || 'Chave'}: ${prof.pix_chave}` : null,
+        valor_profissional: calcResult.valor_profissional,
+        status_repasse: "Aguardando conclusão"
+      });
+
+    // 9. Chama a Gateway (AbacatePay)
+    const gateway = getPaymentGateway();
+    const paymentRes = await gateway.createPixPayment({
+      amountCentavos: Math.round(calcResult.total_familia * 100),
+      description: `Plantão Zelare - Solicitante: ${solic.nome_completo}`,
+      externalId: solicitacaoId,
+      customer: {
+        name: solic.nome_completo,
+        email: `${solic.whatsapp.replace(/\D/g, '')}@zelare.com`,
+        tax_id: "11144477735", // Valid CPF for testing since we don't collect family CPF yet
+      }
+    });
+
+    if (!paymentRes.success) {
+      // Reverter (ou marcar como falhou)
+      await supabaseAdmin.from("plantoes").update({ status: "Falhou", erro_gateway: paymentRes.error }).eq("id", plantaoId);
+      throw new Error("Erro no gateway (AbacatePay): " + paymentRes.error);
+    }
+
+    // 10. Salva Pagamento com dados do Pix
+    const { error: pgError } = await supabaseAdmin
+      .from("pagamentos")
+      .insert({
+        plantao_id: plantaoId,
+        solicitacao_id: solicitacaoId,
+        familia_nome: solic.nome_completo,
+        familia_whatsapp: solic.whatsapp,
+        valor_profissional: calcResult.valor_profissional,
+        taxa_zelare: calcResult.taxa_zelare,
+        total_familia: calcResult.total_familia,
+        status_pagamento: "Pix gerado",
+        gateway: gateway.name,
+        gateway_id: paymentRes.gatewayId,
+        qr_code_url: paymentRes.qrCodeUrl,
+        pix_emv: paymentRes.pixEmv,
+      });
+
+    if (pgError) {
+      // Reverter ou tentar logar erro
+      throw new Error("Erro ao registrar pagamento no banco de dados.");
+    }
+
+    // 11. Sucesso total: atualizar plantão e solicitação para Aguardando Pagamento
+    await supabaseAdmin
+      .from("plantoes")
+      .update({ status: "Aguardando pagamento" })
+      .eq("id", plantaoId);
+
+    await supabaseAdmin
+      .from("familias_solicitacoes")
+      .update({ status: "Aguardando pagamento" })
+      .eq("id", solicitacaoId);
+
+    revalidatePath(`/admin/solicitacoes/${solicitacaoId}`);
+    revalidatePath(`/admin/plantoes`);
+    revalidatePath(`/admin/financeiro`);
+
+    return { 
+      success: true, 
+      resumo: {
+        familia: solic.nome_completo,
+        valor_total: calcResult.total_familia,
+        repasse: calcResult.valor_profissional
+      } 
+    };
+  } catch (err: any) {
+    return { error: err.message || "Erro desconhecido ao efetivar." };
+  }
+}
+

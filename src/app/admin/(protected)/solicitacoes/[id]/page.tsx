@@ -17,6 +17,7 @@ import { FinanceiroSolicitacaoCard } from "@/components/admin/FinanceiroSolicita
 import { AddOcorrenciaAdminModal } from "@/components/admin/AddOcorrenciaAdminModal";
 import { Copy, MapPin } from "lucide-react";
 import { calcularDistanciaKm } from "@/lib/geo";
+import { updateStatus } from "@/app/admin/crm-actions";
 
 export const revalidate = 0;
 
@@ -63,6 +64,13 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
     .from("oportunidades_profissionais")
     .select("*")
     .eq("solicitacao_id", resolvedParams.id);
+
+  // Buscar plantões desta solicitação
+  const { data: plantoes } = await supabaseAdmin
+    .from("plantoes")
+    .select("*")
+    .eq("solicitacao_id", resolvedParams.id)
+    .not("status", "in", '("Cancelado","Falhou")');
 
   // Buscar pacotes desta solicitação
   const { data: pacotesDaSolicitacao } = await supabaseAdmin
@@ -206,6 +214,9 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
     .slice(0, 10);
   }
 
+  const profsAceitaram = profsCompativeisGeo.filter(p => oportunidades?.find(o => o.profissional_id === p.id)?.status === "Aceita");
+  const profsPendentes = profsCompativeisGeo.filter(p => oportunidades?.find(o => o.profissional_id === p.id)?.status !== "Aceita");
+
   const addressQuery = encodeURIComponent(`${solic.cep || ''} ${solic.endereco_completo || ''} ${solic.numero || ''} ${solic.cidade || ''}`.replace(/\s+/g, ' ').trim());
   const geoQuery = solic.latitude && solic.longitude ? `${solic.latitude},${solic.longitude}` : addressQuery;
 
@@ -229,11 +240,19 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
       </div>
 
       {solic.status === "Novo pedido" && (
-        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-4 items-start">
+        <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-4 items-start shadow-sm">
           <AlertTriangle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-          <div>
+          <div className="flex-1">
             <h3 className="text-sm font-bold text-blue-900">Ação Recomendada: Iniciar Análise</h3>
-            <p className="text-xs text-blue-800 mt-1">Esta é uma solicitação nova. Entre em contato com a família, confirme as necessidades e mude o status para "Em análise" ou "Procurando profissional".</p>
+            <p className="text-xs text-blue-800 mt-1 mb-3">Esta é uma solicitação nova. Assuma a solicitação para avisar a família que estamos buscando o profissional ideal.</p>
+            <form action={async () => {
+              "use server";
+              await updateStatus("familias_solicitacoes", solic.id, "Procurando profissional");
+            }}>
+              <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-colors shadow flex items-center gap-2">
+                <UserCheck className="w-4 h-4" /> Assumir e Iniciar Busca
+              </button>
+            </form>
           </div>
         </div>
       )}
@@ -377,59 +396,118 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
             <p className="text-xs text-text-secondary mb-4">
               Estes profissionais estão dentro do raio de atendimento e possuem categoria compatível, além de aparentarem estar sem conflito de agenda.
             </p>
-            {profsCompativeisGeo.length === 0 ? (
+
+            {profsAceitaram.length > 0 && (
+              <div className="mb-8">
+                <h4 className="text-sm font-bold text-green-700 bg-green-50 px-3 py-2 rounded-lg border border-green-200 mb-4 inline-flex items-center gap-2">
+                  <UserCheck className="w-4 h-4" /> Profissionais que Aceitaram
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {profsAceitaram.map(p => {
+                    const convite = oportunidades?.find(o => o.profissional_id === p.id);
+                    return (
+                      <div key={p.id} className="p-4 border border-green-200 rounded-xl flex flex-col justify-between bg-green-50/30">
+                        {/* Renderização do Card do Profissional Aceito */}
+                        <div className="mb-3">
+                          <Link href={`/admin/profissionais/${p.id}`} prefetch={false} className="text-sm font-bold text-text-main hover:text-green-700">{p.nome_completo}</Link>
+                          <p className="text-[10px] uppercase font-bold text-text-secondary mt-1">{p.categoria_profissional}</p>
+                          <p className="text-xs text-text-secondary mt-1">{p.cidade} - {p.bairro}</p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-[10px] font-medium border border-green-200">Livre para este plantão</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 mt-4">
+                          <ConvidarProfissionalButton 
+                            solicitacaoId={solic.id} 
+                            profissionalId={p.id} 
+                            jaConvidado={!!convite} 
+                            statusConvite={convite?.status}
+                            valorContraproposta={convite?.valor_contraproposta}
+                            jaEfetivado={plantoes && plantoes.length > 0}
+                            resumoEfetivacao={{
+                              familia_nome: solic.nome_completo,
+                              tipo_cuidado: solic.tipo_profissional || "Cuidador",
+                              data_horario: `${solic.data_desejada?.split('T')[0].split('-').reverse().join('/')} às ${solic.horario_desejado}`,
+                              duracao: solic.duracao_plantao || "",
+                              endereco: `${solic.endereco_cidade} - ${solic.endereco_bairro}`,
+                              profissional_nome: p.nome_completo
+                            }}
+                          />
+                          <div className="flex gap-2">
+                            <Link href={`/admin/profissionais/${p.id}`} prefetch={false} className="flex-1 text-center text-xs font-medium bg-white border border-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                              Ver Perfil
+                            </Link>
+                            {p.whatsapp && (
+                              <a href={`https://wa.me/55${p.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium bg-green-50 border border-green-200 text-green-700 py-2 rounded-lg hover:bg-green-100 transition-colors">
+                                WhatsApp
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {profsPendentes.length > 0 ? (
+              <div>
+                {profsAceitaram.length > 0 && <h4 className="text-sm font-bold text-gray-500 mb-4">Outros Profissionais</h4>}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {profsPendentes.map(p => {
+                    const convite = oportunidades?.find(o => o.profissional_id === p.id);
+                    return (
+                      <div key={p.id} data-testid="card-profissional-compativel" className="p-4 border border-gray-100 rounded-xl flex flex-col justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div className="mb-3">
+                          <Link href={`/admin/profissionais/${p.id}`} prefetch={false} className="text-sm font-bold text-text-main hover:text-[#8ECADF]">{p.nome_completo}</Link>
+                          <p className="text-[10px] uppercase font-bold text-text-secondary mt-1">{p.categoria_profissional}</p>
+                          <p className="text-xs text-text-secondary mt-1">{p.cidade} - {p.bairro}</p>
+                          
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {p.distancia_km !== null && (
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-medium border border-blue-200">
+                                Distância: {p.distancia_km.toFixed(1)} km
+                              </span>
+                            )}
+                            <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-[10px] font-medium border border-green-200">
+                              Dentro do raio ({p.raio_atendimento_km || 10}km)
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 mt-4">
+                          <ConvidarProfissionalButton 
+                            solicitacaoId={solic.id} 
+                            profissionalId={p.id} 
+                            jaConvidado={!!convite} 
+                            statusConvite={convite?.status}
+                            valorContraproposta={convite?.valor_contraproposta}
+                            jaEfetivado={plantoes && plantoes.length > 0}
+                            resumoEfetivacao={{
+                              familia_nome: solic.nome_completo,
+                              tipo_cuidado: solic.tipo_profissional || "Cuidador",
+                              data_horario: `${solic.data_desejada?.split('T')[0].split('-').reverse().join('/')} às ${solic.horario_desejado}`,
+                              duracao: solic.duracao_plantao || "",
+                              endereco: `${solic.endereco_cidade} - ${solic.endereco_bairro}`,
+                              profissional_nome: p.nome_completo
+                            }}
+                          />
+                          <div className="flex gap-2">
+                            <Link href={`/admin/profissionais/${p.id}`} prefetch={false} className="flex-1 text-center text-xs font-medium bg-white border border-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                              Ver Perfil
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : profsAceitaram.length === 0 ? (
                <div className="p-4 bg-orange-50 border border-orange-100 rounded-xl text-sm text-orange-800">
                  Nenhum profissional validado encontrado dentro do raio de atendimento com a categoria solicitada.
                </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {profsCompativeisGeo.map(p => {
-                  const convite = oportunidades?.find(o => o.profissional_id === p.id);
-                  return (
-                    <div key={p.id} data-testid="card-profissional-compativel" className="p-4 border border-gray-100 rounded-xl flex flex-col justify-between bg-gray-50 hover:bg-gray-100 transition-colors">
-                      <div className="mb-3">
-                        <Link href={`/admin/profissionais/${p.id}`} prefetch={false} className="text-sm font-bold text-text-main hover:text-[#8ECADF]">{p.nome_completo}</Link>
-                        <p className="text-[10px] uppercase font-bold text-text-secondary mt-1">{p.categoria_profissional}</p>
-                        <p className="text-xs text-text-secondary mt-1">{p.cidade} - {p.bairro}</p>
-                        
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {p.distancia_km !== null && (
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-[10px] font-medium border border-blue-200">
-                              Distância: {p.distancia_km.toFixed(1)} km
-                            </span>
-                          )}
-                          <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-[10px] font-medium border border-green-200">
-                            Dentro do raio ({p.raio_atendimento_km || 10}km)
-                          </span>
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded text-[10px] font-medium border border-emerald-200">
-                            Livre para este plantão
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-2 mt-4">
-                        <ConvidarProfissionalButton 
-                          solicitacaoId={solic.id} 
-                          profissionalId={p.id} 
-                          jaConvidado={!!convite} 
-                          statusConvite={convite?.status}
-                          valorContraproposta={convite?.valor_contraproposta}
-                        />
-                        <div className="flex gap-2">
-                          <Link href={`/admin/profissionais/${p.id}`} prefetch={false} className="flex-1 text-center text-xs font-medium bg-white border border-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                            Ver Perfil
-                          </Link>
-                          {p.whatsapp && (
-                            <a href={`https://wa.me/55${p.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium bg-green-50 border border-green-200 text-green-700 py-2 rounded-lg hover:bg-green-100 transition-colors">
-                              WhatsApp
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            ) : null}
 
             {profsSemGeo.length > 0 && (
               <div className="mt-8">
@@ -449,28 +527,6 @@ export default async function SolicitacaoDetails({ params }: { params: Promise<{
         {/* Coluna Direita: Ações e Observações */}
         <div className="space-y-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-sm font-bold text-text-main mb-4">Gerenciar Status</h3>
-            <UpdateStatusForm table="familias_solicitacoes" id={solic.id} currentStatus={solic.status} options={statusOptions} />
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <CalendarClock className="w-5 h-5 text-[#8ECADF]" />
-              <h3 className="text-sm font-bold text-text-main">Criar Plantão</h3>
-            </div>
-            <p className="text-xs text-text-secondary mb-4">
-              Gere um plantão oficial a partir desta solicitação para vincular a um profissional.
-            </p>
-            <StartPlantaoModal 
-              solicitacaoId={solic.id}
-              solicEstado={solic.endereco_estado || solic.estado}
-              solicCidade={solic.endereco_cidade || solic.cidade}
-              profissionais={profissionais || []}
-              ocupacoes={ocupacoesAtivas || []}
-              defaultData={solic.data_desejada}
-              defaultHorario={solic.horario_desejado}
-              defaultDuracao={solic.duracao_plantao}
-            />
 
             {pacotesDaSolicitacao && pacotesDaSolicitacao.length > 0 && (
               <div className="mt-6 pt-6 border-t border-gray-100">

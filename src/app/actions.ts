@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabaseAdmin";
 import { familiaSchema, profissionalSchema, FamiliaData, ProfissionalData } from "@/lib/schemas";
 import { geocodeAddress } from "@/lib/geo";
+import { getPaymentGateway } from "@/lib/payments";
 
 export async function submitFamilia(data: FamiliaData) {
   // 1. Validação no lado do servidor para garantir que os dados não foram adulterados
@@ -45,6 +46,7 @@ export async function submitFamilia(data: FamiliaData) {
     tipo_profissional: validData.tipo_profissional,
     data_desejada: validData.data_desejada,
     horario_desejado: validData.horario_desejado,
+    horario_fim: validData.horario_fim,
     duracao_plantao: validData.duracao_plantao,
     e_urgente: validData.e_urgente,
     atividades_necessarias: validData.atividades_necessarias || null,
@@ -80,7 +82,7 @@ export async function submitFamilia(data: FamiliaData) {
   // 5. Notificação Interna (Webhook n8n ou Email - Deixando estrutura pronta)
   // await sendWebhookNotification("familia", dbPayload);
 
-  return { success: true };
+  return { success: true, codigo: codigoAcompanhamento };
 }
 
 export async function submitProfissional(data: ProfissionalData) {
@@ -158,4 +160,67 @@ export async function submitProfissional(data: ProfissionalData) {
   // await sendWebhookNotification("profissional", dbPayload);
 
   return { success: true };
+}
+
+export async function gerarCobrancaPix(solicitacaoId: string, valorCentavos: number) {
+  const supabase = createAdminClient();
+  
+  // 1. Obter a solicitação
+  const { data: solicitacao, error: fetchError } = await supabase
+    .from('familias_solicitacoes')
+    .select('*')
+    .eq('id', solicitacaoId)
+    .single();
+
+  if (fetchError || !solicitacao) {
+    return { success: false, error: "Solicitação não encontrada." };
+  }
+
+  // 2. Gerar cobrança via AbacatePay
+  const gateway = getPaymentGateway();
+  const paymentRes = await gateway.createPixPayment({
+    amountCentavos: valorCentavos,
+    description: `Plantão Zelare - Solicitante: ${solicitacao.nome_completo}`,
+    externalId: solicitacao.id,
+    customer: {
+      name: solicitacao.nome_completo,
+      email: `${solicitacao.whatsapp}@whatsapp.zelare.com`, // Email mockado para gateway que exige
+      tax_id: "00000000000", // Idealmente capturar CPF real da família
+    }
+  });
+
+  if (!paymentRes.success) {
+    return { success: false, error: paymentRes.error };
+  }
+
+  // 3. Salvar pagamento na tabela pagamentos
+  const { data: pagamento, error: insertError } = await supabase
+    .from('pagamentos')
+    .insert([{
+      solicitacao_id: solicitacao.id,
+      valor_centavos: valorCentavos,
+      status: 'PENDING',
+      gateway: gateway.name,
+      gateway_id: paymentRes.gatewayId,
+      qr_code_url: paymentRes.qrCodeUrl,
+      pix_emv: paymentRes.pixEmv,
+    }])
+    .select()
+    .single();
+
+  if (insertError) {
+    return { success: false, error: "Erro ao registrar pagamento no banco." };
+  }
+
+  // 4. Atualizar solicitação para Aguardando Pagamento
+  await supabase
+    .from('familias_solicitacoes')
+    .update({ 
+      status: 'Aguardando Pagamento',
+      valor_cobrado_centavos: valorCentavos,
+      pagamento_status: 'PENDING'
+    })
+    .eq('id', solicitacao.id);
+
+  return { success: true, pagamento };
 }

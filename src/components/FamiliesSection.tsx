@@ -59,7 +59,7 @@ export default function FamiliesSection() {
                       <span className="text-xs font-medium text-text-secondary">5.0</span>
                     </div>
                   </div>
-                  <p className="text-xs text-text-secondary">Cuidadora de Idosos • São José</p>
+                  <p className="text-xs text-text-secondary">Cuidadora de Idosos</p>
                 </div>
               </div>
 
@@ -97,7 +97,7 @@ export default function FamiliesSection() {
                       <span className="text-xs font-medium text-text-secondary">5.0</span>
                     </div>
                   </div>
-                  <p className="text-xs text-text-secondary">Babá • Palhoça</p>
+                  <p className="text-xs text-text-secondary">Babá</p>
                 </div>
               </div>
 

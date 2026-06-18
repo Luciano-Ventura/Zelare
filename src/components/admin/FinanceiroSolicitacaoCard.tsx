@@ -43,13 +43,39 @@ export function FinanceiroSolicitacaoCard({
     }
   };
 
+  const handleGerarPix = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const valorReais = formData.get("valorReais") as string;
+    if (!valorReais) return;
+
+    const valorCentavos = Math.round(parseFloat(valorReais.replace(",", ".")) * 100);
+    
+    setLoading(true);
+    try {
+      const { gerarCobrancaPix } = await import("@/app/actions");
+      const res = await gerarCobrancaPix(solicitacaoId, valorCentavos);
+      if (res.success) {
+        alert("Pix gerado com sucesso no AbacatePay!");
+        window.location.reload();
+      } else {
+        alert("Erro ao gerar Pix: " + res.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao gerar Pix.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!pagamentos || pagamentos.length === 0) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-sm font-bold text-text-main mb-4 flex items-center gap-2">
           <Wallet className="w-5 h-5 text-gray-400" /> Financeiro
         </h3>
-        <p className="text-sm text-gray-500">Nenhuma cobrança gerada para esta solicitação ainda.</p>
+        <p className="text-sm text-gray-500 mb-4">Nenhuma cobrança gerada para esta solicitação ainda. A cobrança (Pix) será gerada automaticamente ao efetivar o plantão do profissional.</p>
       </div>
     );
   }
@@ -69,13 +95,40 @@ export function FinanceiroSolicitacaoCard({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-gray-200">
                 <div>
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Pagamento da Família</p>
-                  <p className="text-lg font-black text-gray-800">{formatCurrency(pag.total_familia)}</p>
-                  <p className="text-xs font-semibold mt-1">
-                    Status: <span className={pag.status_pagamento === "Pago" ? "text-green-600" : "text-amber-600"}>{pag.status_pagamento}</span>
+                  {/* Se tiver valor_centavos usa ele, senão faz fallback pro total_familia legado */}
+                  <p className="text-lg font-black text-gray-800">
+                    {pag.valor_centavos ? formatCurrency(pag.valor_centavos / 100) : formatCurrency(pag.total_familia)}
                   </p>
+                  <p className="text-xs font-semibold mt-1 flex items-center gap-1">
+                    Status: 
+                    <span className={pag.status === "PAID" || pag.status_pagamento === "Pago" ? "text-green-600" : "text-amber-600"}>
+                      {pag.status === "PAID" ? "PAGO (Pix)" : pag.status === "PENDING" ? "Aguardando Pagamento" : pag.status_pagamento}
+                    </span>
+                  </p>
+                  {pag.gateway === "abacatepay" && pag.status === "PENDING" && (
+                     <p className="text-[10px] text-gray-500 mt-1">Gerado via AbacatePay</p>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {pag.status_pagamento === "Aguardando pagamento" && (
+                  {pag.status === "PENDING" && pag.gateway === "abacatepay" && (
+                    <>
+                      <button 
+                        onClick={() => window.open(pag.qr_code_url || `/acompanhar/${solicitacaoId}`, '_blank')}
+                        className="text-xs font-semibold bg-white border border-gray-300 px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-gray-50 transition-colors text-gray-700"
+                      >
+                        <LinkIcon className="w-3.5 h-3.5" /> Ver Tela Pix
+                      </button>
+                      <button 
+                        disabled={loading}
+                        onClick={() => handleAction("marcar_pago", pag.id)}
+                        className="text-xs font-semibold bg-green-100 text-green-700 px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-green-200 transition-colors"
+                        title="Simula o recebimento do pagamento caso webhook não chegue localmente"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Marcar Pago
+                      </button>
+                    </>
+                  )}
+                  {pag.status_pagamento === "Aguardando pagamento" && !pag.gateway && (
                     <>
                       <button 
                         disabled={loading}

@@ -18,7 +18,7 @@ export default async function RelatoriosPage() {
     supabaseAdmin.from("familias_solicitacoes").select("*", { count: "exact", head: true }),
     supabaseAdmin.from("profissionais_cadastros").select("*", { count: "exact", head: true }),
     supabaseAdmin.from("plantoes").select("id, status, total_familia, taxa_zelare, created_at"),
-    supabaseAdmin.from("pagamentos").select("total_familia, taxa_zelare, status_pagamento")
+    supabaseAdmin.from("pagamentos").select("total_familia, taxa_zelare, status_pagamento, pago_em, created_at")
   ]);
 
   const totalPlantoes = plantoes?.length || 0;
@@ -29,34 +29,63 @@ export default async function RelatoriosPage() {
   let receitaTotalZelare = 0;
   let faturamentoTotal = 0;
 
+  // Real data arrays
+  const monthlyFaturamento: Record<string, { faturamento: number, receita: number }> = {};
+  const dailyPlantoes: Record<string, number> = {};
+
+  // Setup last 6 months
+  const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  const currentMonth = new Date().getMonth();
+  for (let i = 5; i >= 0; i--) {
+    let m = currentMonth - i;
+    if (m < 0) m += 12;
+    monthlyFaturamento[monthNames[m]] = { faturamento: 0, receita: 0 };
+  }
+
+  // Setup last 7 days
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dayStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+    dailyPlantoes[dayStr] = 0;
+  }
+
   pagamentos?.forEach(p => {
     if (p.status_pagamento === "Pago") {
-      faturamentoTotal += Number(p.total_familia || 0);
-      receitaTotalZelare += Number(p.taxa_zelare || 0);
+      const fat = Number(p.total_familia || 0);
+      const rec = Number(p.taxa_zelare || 0);
+      faturamentoTotal += fat;
+      receitaTotalZelare += rec;
+      
+      const date = p.pago_em ? new Date(p.pago_em) : (p.created_at ? new Date(p.created_at) : new Date());
+      const mName = monthNames[date.getMonth()];
+      if (monthlyFaturamento[mName]) {
+        monthlyFaturamento[mName].faturamento += fat;
+        monthlyFaturamento[mName].receita += rec;
+      }
+    }
+  });
+
+  plantoes?.forEach(p => {
+    const date = p.created_at ? new Date(p.created_at) : new Date();
+    const dayStr = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+    if (dailyPlantoes[dayStr] !== undefined) {
+      dailyPlantoes[dayStr] += 1;
     }
   });
 
   const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  // Mock dados para gráficos baseado em pagamentos e plantoes
-  const faturamentoData = [
-    { name: 'Jan', faturamento: 4000, receita: 600 },
-    { name: 'Fev', faturamento: 3000, receita: 450 },
-    { name: 'Mar', faturamento: 5000, receita: 750 },
-    { name: 'Abr', faturamento: 4500, receita: 675 },
-    { name: 'Mai', faturamento: 6000, receita: 900 },
-    { name: 'Jun', faturamento: faturamentoTotal > 0 ? faturamentoTotal : 2500, receita: receitaTotalZelare > 0 ? receitaTotalZelare : 375 },
-  ];
+  const faturamentoData = Object.keys(monthlyFaturamento).map(name => ({
+    name,
+    faturamento: monthlyFaturamento[name].faturamento,
+    receita: monthlyFaturamento[name].receita
+  }));
 
-  const plantoesData = [
-    { date: '10/06', plantoes: 2 },
-    { date: '11/06', plantoes: 4 },
-    { date: '12/06', plantoes: 3 },
-    { date: '13/06', plantoes: 7 },
-    { date: '14/06', plantoes: 5 },
-    { date: '15/06', plantoes: 8 },
-    { date: '16/06', plantoes: totalPlantoes > 0 ? totalPlantoes : 4 },
-  ];
+  const plantoesData = Object.keys(dailyPlantoes).map(date => ({
+    date,
+    plantoes: dailyPlantoes[date]
+  }));
 
   return (
     <div className="space-y-8 pb-10">

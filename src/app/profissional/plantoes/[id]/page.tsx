@@ -1,7 +1,7 @@
 import { requireProfissional } from "@/lib/auth-profissional";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import Link from "next/link";
-import { ChevronLeft, MapPin, Calendar, Clock, Phone } from "lucide-react";
+import { ChevronLeft, MapPin, Calendar, Clock, Phone, CheckCircle2 } from "lucide-react";
 import { notFound } from "next/navigation";
 import AcoesPlantao from "./AcoesPlantao";
 
@@ -88,6 +88,20 @@ export default async function PlantaoDetailPage({ params }: { params: Promise<{ 
           <p className="text-2xl font-black text-[#8ECADF]">R$ {p.valor_profissional}</p>
         </div>
       </div>
+
+      {p.status === "Concluído" && (
+        <div className="bg-gradient-to-r from-[#A8D5BA]/20 to-[#A8D5BA]/40 border border-[#A8D5BA] rounded-3xl p-6 mb-6">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-[#A8D5BA] rounded-full flex items-center justify-center text-green-900 shrink-0">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-black text-green-900">Plantão Finalizado!</h3>
+          </div>
+          <p className="text-green-800 text-sm font-medium">
+            Muito obrigado pelo excelente trabalho. Seu repasse de <strong>R$ {p.valor_profissional}</strong> está em processamento e será depositado em breve na sua conta bancária cadastrada.
+          </p>
+        </div>
+      )}
 
       <AcoesPlantao 
         id={p.id} 

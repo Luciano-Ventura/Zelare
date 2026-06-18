@@ -1,6 +1,6 @@
 import { getProfissionalSessao } from "@/lib/auth-profissional";
 import Link from "next/link";
-import { Home, CalendarClock, Bell, User } from "lucide-react";
+import { Home, CalendarClock, Bell, User, Wallet } from "lucide-react";
 
 export default async function ProfissionalLayout({
   children,
@@ -35,6 +35,10 @@ export default async function ProfissionalLayout({
           <Link href="/profissional/plantoes" className="flex items-center gap-3 p-3 text-[#6B7280] hover:text-[#8ECADF] hover:bg-[#8ECADF]/10 rounded-xl transition-colors">
             <CalendarClock className="w-5 h-5" />
             <span className="font-bold text-sm">Meus Plantões</span>
+          </Link>
+          <Link href="/profissional/financeiro" className="flex items-center gap-3 p-3 text-[#6B7280] hover:text-[#8ECADF] hover:bg-[#8ECADF]/10 rounded-xl transition-colors">
+            <Wallet className="w-5 h-5" />
+            <span className="font-bold text-sm">Financeiro</span>
           </Link>
           <Link href="/profissional/perfil" className="flex items-center gap-3 p-3 text-[#6B7280] hover:text-[#8ECADF] hover:bg-[#8ECADF]/10 rounded-xl transition-colors">
             <User className="w-5 h-5" />
@@ -87,6 +91,10 @@ export default async function ProfissionalLayout({
           <Link href="/profissional/plantoes" className="flex flex-col items-center text-[#6B7280] hover:text-[#8ECADF] transition-colors">
             <CalendarClock className="w-6 h-6 mb-1" />
             <span className="text-[10px] font-bold">Plantões</span>
+          </Link>
+          <Link href="/profissional/financeiro" className="flex flex-col items-center text-[#6B7280] hover:text-[#8ECADF] transition-colors">
+            <Wallet className="w-6 h-6 mb-1" />
+            <span className="text-[10px] font-bold">Ganhos</span>
           </Link>
           <Link href="/profissional/perfil" className="flex flex-col items-center text-[#6B7280] hover:text-[#8ECADF] transition-colors">
             <User className="w-6 h-6 mb-1" />

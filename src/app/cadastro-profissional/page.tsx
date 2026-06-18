@@ -15,6 +15,7 @@ function CadastroProfissionalForm() {
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
+  const [cepError, setCepError] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
   const {
@@ -153,6 +154,7 @@ function CadastroProfissionalForm() {
                         const cleanCep = rawCep.replace(/\D/g, "");
                         if (cleanCep.length === 8) {
                           setIsFetchingCep(true);
+                          setCepError("");
                           try {
                             const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
                             const data = await res.json();
@@ -162,10 +164,11 @@ function CadastroProfissionalForm() {
                               setValue("cidade", data.localidade);
                               setValue("estado", data.uf);
                             } else {
-                              alert("Não conseguimos localizar esse CEP. Preencha o endereço manualmente.");
+                              setCepError("Não conseguimos localizar esse CEP. Preencha o endereço manualmente.");
                             }
                           } catch (err) {
                             console.error("Erro ao buscar CEP", err);
+                            setCepError("Não conseguimos localizar esse CEP. Preencha o endereço manualmente.");
                           }
                           setIsFetchingCep(false);
                         }
@@ -174,6 +177,7 @@ function CadastroProfissionalForm() {
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 text-text-main focus:border-blue-light focus:ring-1 focus:ring-blue-light outline-none transition-all"
                     placeholder="Ex: 88000-000"
                   />
+                  {cepError && <p className="mt-1 text-xs text-blue-600">{cepError}</p>}
                   {errors.cep_base && <p className="mt-1 text-xs text-red-500">{errors.cep_base.message}</p>}
                 </div>
                 <div>
