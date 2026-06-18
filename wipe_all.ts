@@ -42,7 +42,7 @@ async function wipeAll() {
     await supabase.from('profissionais_cadastros').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
     console.log('Apagando log de webhook (se houver)...');
-    await supabase.from('webhook_logs').delete().neq('id', '0').catch(() => {});
+    await supabase.from('webhook_logs').delete().neq('id', '0');
 
     console.log('Banco de dados completamente zerado com sucesso!');
   } catch (error) {
