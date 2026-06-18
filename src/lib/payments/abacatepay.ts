@@ -29,7 +29,7 @@ export class AbacatePayGateway implements PaymentGateway {
         completionUrl: "https://app.zelare.com.br",
         customer: {
           name: request.customer.name,
-          cellphone: request.customer.cellphone || "48999999999",
+          cellphone: request.customer.phone || "48999999999",
           email: request.customer.email,
           taxId: request.customer.tax_id.replace(/\D/g, "") || "11144477735",
         },
