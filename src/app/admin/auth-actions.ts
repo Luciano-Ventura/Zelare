@@ -2,6 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export async function login(formData: FormData) {
   const email = formData.get("email") as string;
@@ -13,6 +15,14 @@ export async function login(formData: FormData) {
 
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     return { error: "Erro crítico: Variáveis de Ambiente do Supabase não configuradas no Vercel." };
+  }
+
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for") || "unknown";
+  const rateLimit = checkRateLimit(`login_${ip}`, 5, 60000); // 5 tentativas por minuto
+
+  if (!rateLimit.success) {
+    return { error: "Muitas tentativas de login. Aguarde um momento e tente novamente." };
   }
 
   let supabase;

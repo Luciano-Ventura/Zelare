@@ -2,64 +2,53 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import Link from "next/link";
 import { ArrowLeft, Clock, CheckCircle2, User, Calendar, MapPin, AlertCircle, Star, Heart } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { PixCopyArea } from "./PixCopyArea";
 import FormAvaliacao from "./FormAvaliacao";
+import { getPublicSolicitacaoByCodigo } from "@/lib/security/sanitization";
+import { checkRateLimit } from "@/lib/security/rate-limit";
 
 export const revalidate = 0; // Dynamic page
-
-async function getSolicitacao(codigo: string, column: string) {
-  const { data, error } = await supabaseAdmin
-    .from("familias_solicitacoes")
-    .select("*")
-    .eq(column, codigo)
-    .single();
-
-  if (error || !data) {
-    return null;
-  }
-  return data;
-}
-
-async function getPagamentoAtivo(solicitacaoId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("pagamentos")
-    .select("*")
-    .eq("solicitacao_id", solicitacaoId)
-    .eq("status", "PENDING")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (error || !data) return null;
-  return data;
-}
-
-async function getPlantoes(solicitacaoId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("plantoes")
-    .select("*")
-    .eq("solicitacao_id", solicitacaoId);
-
-  if (error || !data) return [];
-  return data;
-}
 
 export default async function AcompanhamentoDetalhesPage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
   
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(codigo);
-  const column = isUuid ? 'id' : 'codigo_acompanhamento';
+  // Appply Rate Limit
+  const headersList = await headers();
+  const ip = headersList.get("x-forwarded-for") || "unknown";
   
-  const solicitacao = await getSolicitacao(codigo, column);
+  const rateLimit = checkRateLimit(ip, 20, 60000); // 20 attempts per minute
+  if (!rateLimit.success) {
+    return (
+      <div className="min-h-screen bg-bg-main flex flex-col items-center justify-center p-4 text-center">
+        <AlertCircle className="h-16 w-16 text-orange-400 mb-4" />
+        <h1 className="text-2xl font-bold text-text-main mb-2">Muitas tentativas</h1>
+        <p className="text-text-secondary mb-6">Por favor, aguarde um momento antes de tentar novamente.</p>
+      </div>
+    );
+  }
+
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(codigo);
+  
+  const solicitacao = await getPublicSolicitacaoByCodigo(codigo);
 
   if (solicitacao && isUuid && solicitacao.codigo_acompanhamento) {
     redirect(`/acompanhar/${solicitacao.codigo_acompanhamento}`);
   }
+
   let pagamento = null;
   let plantoes: any[] = [];
+
   if (solicitacao) {
-    pagamento = await getPagamentoAtivo(solicitacao.id);
-    plantoes = await getPlantoes(solicitacao.id);
+    if (solicitacao.pagamentos) {
+      // Pega o último pagamento pending
+      pagamento = solicitacao.pagamentos
+        .filter((p: any) => p.status === "PENDING")
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null;
+    }
+    if (solicitacao.plantoes) {
+      plantoes = solicitacao.plantoes;
+    }
   }
 
   // Fetch se já foi avaliado

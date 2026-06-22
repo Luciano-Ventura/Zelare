@@ -3,6 +3,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { revalidatePath } from "next/cache";
+import { logAuditAction } from "@/lib/security/audit";
 
 export async function updateStatus(table: "familias_solicitacoes" | "profissionais_cadastros" | "plantoes" | "ocorrencias", id: string, newStatus: string) {
   await requireAdmin();
@@ -25,6 +26,17 @@ export async function updateStatus(table: "familias_solicitacoes" | "profissiona
   if (error) {
     return { success: false, error: error.message };
   }
+
+  const admin = await requireAdmin();
+  await logAuditAction({
+    userId: admin.id,
+    userEmail: admin.email,
+    role: admin.role,
+    acao: `UPDATE_STATUS_${table.toUpperCase()}`,
+    entidade: table,
+    entidadeId: id,
+    depois: { status: newStatus }
+  });
 
   if (table === "familias_solicitacoes") {
     const { data } = await supabaseAdmin.from("familias_solicitacoes").select("codigo_acompanhamento").eq("id", id).single();
@@ -112,6 +124,15 @@ export async function confirmarPagamento({ plantaoId, pacoteId, solicitacaoId }:
       .from("familias_solicitacoes")
       .update({ status: "Confirmado" })
       .eq("id", solicitacaoId);
+
+    await logAuditAction({
+      userId: admin.id,
+      userEmail: admin.email,
+      role: admin.role,
+      acao: "CONFIRMAR_PAGAMENTO_MANUAL",
+      entidade: "pagamentos",
+      metadata: { solicitacaoId, plantaoId, pacoteId }
+    });
 
     // Adicionar Observação
     await supabaseAdmin
